@@ -6,18 +6,48 @@
     <title>My Startpage</title>
     
     <link rel="stylesheet" href="css/style.css">
-    
     <script src="js/main.js" defer></script>
 </head>
 <body>
 
     <div class="container">
-        <h1 id="greeting">Good day</h1>
-        <div id="clock">--:--</div>
+        <h1 id="greeting">Good day, <span id="name">Guest</span></h1>
+        <div id="clock">--:--:--</div>
+        <div id="date"></div>
     </div>
 
-    <div id="links-container"></div>
+    <section id="links-container"></section>
+
     <button id="add-link-btn" title="Add new link">+</button>
+    <button id="theme-btn" title="Change theme">🎨</button>
+
+    <div id="theme-panel" class="hidden">
+        <h3>Themes</h3>
+        <button class="theme-option" data-theme="slate">Dark Slate</button>
+        <button class="theme-option" data-theme="light">Light</button>
+        <button class="theme-option" data-theme="ocean">Ocean</button>
+    </div>
+
+    <div id="add-link-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <button class="close-btn">&times;</button>
+            <h2>Add New Link</h2>
+            <form id="add-link-form">
+                <div class="form-group">
+                    <label for="link-name">Name</label>
+                    <input type="text" id="link-name-input" required autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label for="link-url">URL</label>
+                    <input type="url" id="link-url-input" placeholder="https://example.com" required autocomplete="off">
+                </div>
+                <div class="form-buttons">
+                    <button type="submit" class="btn-primary">Add Link</button>
+                    <button type="button" class="btn-secondary" id="cancel-btn">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
 </body>
 </html>

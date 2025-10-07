@@ -1,0 +1,334 @@
+/* --- THEME ENGINE --- */
+:root, [data-theme='slate'] {
+    --bg-gradient: linear-gradient(135deg, #0f172a, #1e2d3b);
+    --text-primary: #e2e8f0;
+    --text-secondary: #94a3b8;
+    --link-bg: rgba(255, 255, 255, 0.1);
+    --link-bg-hover: rgba(255, 255, 255, 0.2);
+    --modal-bg: #1e2d3b;
+    --input-bg: #0f172a;
+    --input-border: #334155;
+    --btn-secondary-bg: #475569;
+}
+
+[data-theme='light'] {
+    --bg-gradient: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+    --text-primary: #1e293b;
+    --text-secondary: #475569;
+    --link-bg: rgba(0, 0, 0, 0.05);
+    --link-bg-hover: rgba(0, 0, 0, 0.1);
+    --modal-bg: #f8fafc;
+    --input-bg: #ffffff;
+    --input-border: #cbd5e1;
+    --btn-secondary-bg: #94a3b8;
+}
+
+[data-theme='ocean'] {
+    --bg-gradient: linear-gradient(135deg, #005c97, #363795);
+    --text-primary: #ffffff;
+    --text-secondary: #a3c1d9;
+    --link-bg: rgba(255, 255, 255, 0.15);
+    --link-bg-hover: rgba(255, 255, 255, 0.25);
+    --modal-bg: #004a7c;
+    --input-bg: #00375e;
+    --input-border: #363795;
+    --btn-secondary-bg: #363795;
+}
+
+/* --- Base Styles --- */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: var(--bg-gradient);
+    color: var(--text-primary);
+    font-family: "Segoe UI", sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    transition: background 0.5s ease, color 0.5s ease;
+}
+
+.container {
+    text-align: center;
+}
+
+#greeting {
+    font-size: 50px;
+    font-weight: 600;
+}
+
+#clock {
+    font-size: 80px;
+    font-weight: bold;
+    margin-top: 10px;
+    transition: transform 0.2s ease-in-out, opacity 0.3s ease;
+}
+
+#clock.tick {
+    transform: scale(1.02);
+    opacity: 0.8;
+}
+
+#date {
+    font-size: 1.2rem;
+    opacity: 0.8;
+    margin-top: 5px;
+    color: var(--text-secondary);
+}
+
+#name {
+    cursor: pointer;
+    transition: text-decoration 0.2s ease-in-out;
+}
+
+#name:hover {
+    text-decoration: underline;
+}
+
+
+/* --- Links Section Styles --- */
+#links-container {
+    position: absolute;
+    bottom: 20px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    flex-wrap: wrap;
+    padding: 10px;
+}
+
+.link-item {
+    background-color: var(--link-bg);
+    padding: 8px 15px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    opacity: 0;
+    transform: scale(0.9);
+    transition: opacity 0.3s ease, transform 0.3s ease, background-color 0.2s;
+}
+
+.link-item.visible {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.link-item:hover {
+    background-color: var(--link-bg-hover);
+}
+
+.link-item a {
+    color: var(--text-primary);
+    text-decoration: none;
+    margin-right: 8px;
+}
+
+.delete-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    padding: 0 5px;
+}
+
+
+/* --- Buttons --- */
+#add-link-btn {
+    position: fixed;
+    bottom: 25px;
+    right: 30px;
+    background-color: rgba(255, 255, 255, 0.8);
+    color: #1e2d3b;
+    border: none;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    font-size: 30px;
+    cursor: pointer;
+    transition: transform 0.2s, background-color 0.2s;
+}
+
+#add-link-btn:hover {
+    background-color: white;
+    transform: scale(1.1);
+}
+
+
+/* --- Modal Styles --- */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background-color: var(--modal-bg);
+    padding: 30px;
+    border-radius: 8px;
+    position: relative;
+    width: 90%;
+    max-width: 400px;
+    color: var(--text-primary);
+}
+
+.modal-overlay.hidden {
+    display: none;
+}
+
+.modal-content h2 {
+    margin-top: 0;
+    margin-bottom: 20px;
+}
+
+.close-btn {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: var(--text-primary);
+    cursor: pointer;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 8px;
+    border-radius: 4px;
+    border: 1px solid var(--input-border);
+    background-color: var(--input-bg);
+    color: var(--text-primary);
+}
+
+.form-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.form-buttons button {
+    padding: 8px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.btn-primary {
+    background-color: #3b82f6;
+    color: white;
+}
+
+.btn-secondary {
+    background-color: var(--btn-secondary-bg);
+    color: white;
+}
+
+
+/* --- Theme Panel Styles --- */
+#theme-btn {
+    position: fixed;
+    bottom: 25px;
+    right: 90px;
+    background: none;
+    border: none;
+    font-size: 28px;
+    cursor: pointer;
+    opacity: 0.8;
+    transition: transform 0.2s, opacity 0.2s;
+}
+
+#theme-btn:hover {
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+#theme-panel {
+    position: fixed;
+    bottom: 80px;
+    right: 20px;
+    background-color: var(--modal-bg);
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 999;
+}
+
+#theme-panel.hidden {
+    display: none;
+}
+
+.theme-option {
+    padding: 8px 12px;
+    border: 1px solid var(--input-border);
+    background-color: var(--input-bg);
+    color: var(--text-primary);
+    border-radius: 4px;
+    cursor: pointer;
+    text-align: left;
+}
+
+.theme-option:hover {
+    background-color: var(--link-bg-hover);
+}
+
+
+/* --- Responsiveness --- */
+@media (max-width: 600px) {
+    #greeting {
+        font-size: 35px;
+    }
+
+    #clock {
+        font-size: 55px;
+    }
+
+    #date {
+        font-size: 1rem;
+    }
+
+    #add-link-btn {
+        width: 45px;
+        height: 45px;
+        font-size: 25px;
+        bottom: 15px;
+        right: 15px;
+    }
+
+    #theme-btn {
+        bottom: 15px;
+        right: 70px;
+    }
+
+    #theme-panel {
+        bottom: 70px;
+        right: 15px;
+    }
+}
