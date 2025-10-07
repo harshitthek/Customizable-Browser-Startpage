@@ -4,34 +4,57 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Startpage</title>
-    
     <link rel="stylesheet" href="css/style.css">
     <script src="js/main.js" defer></script>
 </head>
-<body>
+<body data-theme="slate">
 
-    <div class="container">
-        <h1 id="greeting">Good day, <span id="name">Guest</span></h1>
-        <div id="clock">--:--:--</div>
-        <div id="date"></div>
+    <!-- Top Right UI Controls -->
+    <div class="top-right-controls">
+        <button id="theme-btn" title="Change theme">🎨</button>
+        <button id="flashlight-btn" title="Toggle Flashlight">🔦</button>
+        <button id="mute-btn" title="Mute/Unmute Sounds">🔊</button>
     </div>
 
-    <section id="links-container"></section>
-
-    <button id="add-link-btn" title="Add new link">+</button>
-    <button id="theme-btn" title="Change theme">🎨</button>
-
-    <div id="theme-panel" class="hidden">
+    <main>
+        <div class="container">
+            <h1 id="greeting">Good day, <span id="name">Guest</span></h1>
+            <div id="clock">--:--:--</div>
+            <div id="date"></div>
+        </div>
+        <section id="links-container"></section>
+    </main>
+    
+    <!-- Panels, Modals, and Audio -->
+    <div id="context-menu" class="panel hidden">
+        <button id="context-edit-btn">✏️ Edit</button>
+        <button id="context-delete-btn">❌ Delete</button>
+    </div>
+    
+    <div id="theme-panel" class="panel hidden">
         <h3>Themes</h3>
         <button class="theme-option" data-theme="slate">Dark Slate</button>
         <button class="theme-option" data-theme="light">Light</button>
         <button class="theme-option" data-theme="ocean">Ocean</button>
-    </div>
+        <button class="theme-option" id="custom-theme-btn">Custom</button>
 
+        <!-- THIS WAS MISSING -->
+        <div id="custom-theme-panel" class="hidden">
+            <div class="color-picker-group">
+                <label for="accent-color-input">Accent Color</label>
+                <input type="color" id="accent-color-input" value="#3b82f6">
+            </div>
+            <div class="form-buttons">
+                <button type="button" class="btn-primary" id="save-custom-theme-btn">Save</button>
+                <button type="button" class="btn-secondary" id="back-to-themes-btn">Back</button>
+            </div>
+        </div>
+    </div>
+    
     <div id="add-link-modal" class="modal-overlay hidden">
-        <div class="modal-content">
+        <div class="modal-content panel">
             <button class="close-btn">&times;</button>
-            <h2>Add New Link</h2>
+            <h2 id="modal-title">Add New Link</h2>
             <form id="add-link-form">
                 <div class="form-group">
                     <label for="link-name">Name</label>
@@ -42,12 +65,14 @@
                     <input type="url" id="link-url-input" placeholder="https://example.com" required autocomplete="off">
                 </div>
                 <div class="form-buttons">
-                    <button type="submit" class="btn-primary">Add Link</button>
+                    <button type="submit" class="btn-primary" id="modal-submit-btn">Add Link</button>
                     <button type="button" class="btn-secondary" id="cancel-btn">Cancel</button>
                 </div>
             </form>
         </div>
     </div>
 
+    <audio id="flashlight-sound" src="https://assets.mixkit.co/sfx/preview/mixkit-light-switch-flick-1714.mp3" preload="auto"></audio>
 </body>
 </html>
+

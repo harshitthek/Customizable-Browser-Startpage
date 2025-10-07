@@ -3,144 +3,233 @@
     --bg-gradient: linear-gradient(135deg, #0f172a, #1e2d3b);
     --text-primary: #e2e8f0;
     --text-secondary: #94a3b8;
+    --accent-color: #3b82f6;
     --link-bg: rgba(255, 255, 255, 0.1);
     --link-bg-hover: rgba(255, 255, 255, 0.2);
-    --modal-bg: #1e2d3b;
+    --panel-bg: #1e2d3b;
     --input-bg: #0f172a;
     --input-border: #334155;
     --btn-secondary-bg: #475569;
 }
-
 [data-theme='light'] {
     --bg-gradient: linear-gradient(135deg, #f1f5f9, #e2e8f0);
     --text-primary: #1e293b;
     --text-secondary: #475569;
+    --accent-color: #ef4444;
     --link-bg: rgba(0, 0, 0, 0.05);
     --link-bg-hover: rgba(0, 0, 0, 0.1);
-    --modal-bg: #f8fafc;
+    --panel-bg: #f8fafc;
     --input-bg: #ffffff;
     --input-border: #cbd5e1;
     --btn-secondary-bg: #94a3b8;
 }
-
 [data-theme='ocean'] {
     --bg-gradient: linear-gradient(135deg, #005c97, #363795);
     --text-primary: #ffffff;
     --text-secondary: #a3c1d9;
+    --accent-color: #f59e0b;
     --link-bg: rgba(255, 255, 255, 0.15);
     --link-bg-hover: rgba(255, 255, 255, 0.25);
-    --modal-bg: #004a7c;
+    --panel-bg: #004a7c;
     --input-bg: #00375e;
     --input-border: #363795;
     --btn-secondary-bg: #363795;
 }
-
 /* --- Base Styles --- */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
+* { margin: 0; padding: 0; box-sizing: border-box; }
 body {
     background: var(--bg-gradient);
     color: var(--text-primary);
     font-family: "Segoe UI", sans-serif;
     display: flex;
-    align-items: center;
     justify-content: center;
+    align-items: center;
     min-height: 100vh;
     transition: background 0.5s ease, color 0.5s ease;
+    padding: 20px;
 }
-
-.container {
-    text-align: center;
+main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    width: 100%;
+    transition: filter 0.3s ease;
 }
-
-#greeting {
-    font-size: 50px;
-    font-weight: 600;
-}
-
+main.blurred { filter: blur(4px); }
+.container { text-align: center; }
+#greeting { font-size: 50px; font-weight: 600; }
 #clock {
     font-size: 80px;
     font-weight: bold;
     margin-top: 10px;
-    transition: transform 0.2s ease-in-out, opacity 0.3s ease;
+    color: var(--accent-color);
+    transition: transform 0.2s ease-in-out, opacity 0.3s ease, color 0.5s ease;
 }
-
-#clock.tick {
-    transform: scale(1.02);
-    opacity: 0.8;
-}
-
+#clock.tick { transform: scale(1.02); opacity: 0.8; }
 #date {
     font-size: 1.2rem;
     opacity: 0.8;
     margin-top: 5px;
     color: var(--text-secondary);
 }
-
 #name {
     cursor: pointer;
-    transition: text-decoration 0.2s ease-in-out;
+    color: var(--accent-color);
+    transition: text-decoration 0.2s ease-in-out, color 0.5s ease;
 }
-
-#name:hover {
-    text-decoration: underline;
-}
-
-
-/* --- Links Section Styles --- */
+#name:hover { text-decoration: underline; }
+/* --- Links Section --- */
 #links-container {
-    position: absolute;
-    bottom: 20px;
-    width: 100%;
     display: flex;
     justify-content: center;
-    gap: 15px;
+    align-items: flex-start;
     flex-wrap: wrap;
-    padding: 10px;
+    gap: 25px;
+    padding: 20px;
+    max-width: 900px;
+    width: 100%;
 }
-
 .link-item {
-    background-color: var(--link-bg);
-    padding: 8px 15px;
-    border-radius: 20px;
-    display: flex;
-    align-items: center;
-    opacity: 0;
-    transform: scale(0.9);
-    transition: opacity 0.3s ease, transform 0.3s ease, background-color 0.2s;
+    position: relative;
+    width: 120px;
+    z-index: 1;
+    transition: transform 0.2s ease;
 }
-
-.link-item.visible {
-    opacity: 1;
-    transform: scale(1);
-}
-
 .link-item:hover {
-    background-color: var(--link-bg-hover);
+    transform: translateY(-4px); /* Your suggested hover effect */
 }
-
-.link-item a {
-    color: var(--text-primary);
+.link-item.focused { z-index: 10; transform: scale(1.1) translateY(-4px); }
+.link-anchor { /* Your new, correct anchor style */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 15px 10px;
+    border-radius: 12px;
     text-decoration: none;
-    margin-right: 8px;
+    color: inherit;
+    transition: background-color 0.2s ease;
+    cursor: pointer;
 }
-
-.delete-btn {
+.link-anchor:hover { background-color: var(--link-bg-hover); }
+.icon-container {
+    width: 80px;
+    height: 80px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: transparent;
+    border-radius: 16px;
+    overflow: hidden;
+}
+.favicon {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 16px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+.fallback-icon {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: var(--accent-color);
+    color: white;
+    font-size: 40px;
+    font-weight: bold;
+    border-radius: 16px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+.link-name {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text-primary);
+    width: 100%;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.link-actions {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: flex;
+    gap: 5px;
+    z-index: 2;
+    opacity: 0;
+    transform: translateY(-5px);
+    pointer-events: none;
+    transition: all 0.2s ease;
+}
+.link-item:hover .link-actions { opacity: 1; transform: translateY(0); pointer-events: auto; }
+.edit-btn, .delete-btn {
+    background-color: rgba(0,0,0,0.4);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    font-size: 12px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+.edit-btn { font-size: 14px; }
+.edit-btn:hover, .delete-btn:hover { background-color: rgba(0,0,0,0.6); }
+/* --- Overlays & Panels --- */
+#page-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient( circle 300px at var(--x, 50%) var(--y, 50%), rgba(0,0,0,0) 0%, rgba(0,0,0,0.8) 100% );
+    z-index: 5;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+#page-overlay.visible { opacity: 1; }
+.panel {
+    background-color: var(--panel-bg);
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    padding: 15px;
+    position: fixed;
+    z-index: 1001;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px);
+    transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
+}
+.panel:not(.hidden) {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+#context-menu {
+    width: 150px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+#context-menu button {
     background: none;
     border: none;
-    color: var(--text-secondary);
+    color: var(--text-primary);
+    padding: 8px 12px;
+    text-align: left;
+    border-radius: 4px;
     cursor: pointer;
-    font-size: 14px;
-    font-weight: bold;
-    padding: 0 5px;
+    width: 100%;
 }
-
-
-/* --- Buttons --- */
+#context-menu button:hover { background-color: var(--link-bg-hover); }
 #add-link-btn {
     position: fixed;
     bottom: 25px;
@@ -155,14 +244,7 @@ body {
     cursor: pointer;
     transition: transform 0.2s, background-color 0.2s;
 }
-
-#add-link-btn:hover {
-    background-color: white;
-    transform: scale(1.1);
-}
-
-
-/* --- Modal Styles --- */
+#add-link-btn:hover { background-color: white; transform: scale(1.1); }
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -174,27 +256,25 @@ body {
     justify-content: center;
     align-items: center;
     z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
 }
-
+.modal-overlay:not(.hidden) {
+    opacity: 1;
+    visibility: visible;
+}
 .modal-content {
-    background-color: var(--modal-bg);
-    padding: 30px;
-    border-radius: 8px;
-    position: relative;
     width: 90%;
     max-width: 400px;
     color: var(--text-primary);
+    transform: scale(0.95);
+    transition: transform 0.3s ease;
 }
-
-.modal-overlay.hidden {
-    display: none;
+.modal-overlay:not(.hidden) .modal-content {
+    transform: scale(1);
 }
-
-.modal-content h2 {
-    margin-top: 0;
-    margin-bottom: 20px;
-}
-
+.modal-content h2 { margin-top: 0; margin-bottom: 20px; }
 .close-btn {
     position: absolute;
     top: 10px;
@@ -205,16 +285,8 @@ body {
     color: var(--text-primary);
     cursor: pointer;
 }
-
-.form-group {
-    margin-bottom: 15px;
-}
-
-.form-group label {
-    display: block;
-    margin-bottom: 5px;
-}
-
+.form-group { margin-bottom: 15px; }
+.form-group label { display: block; margin-bottom: 5px; }
 .form-group input {
     width: 100%;
     padding: 8px;
@@ -223,33 +295,10 @@ body {
     background-color: var(--input-bg);
     color: var(--text-primary);
 }
-
-.form-buttons {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    margin-top: 20px;
-}
-
-.form-buttons button {
-    padding: 8px 15px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-.btn-primary {
-    background-color: #3b82f6;
-    color: white;
-}
-
-.btn-secondary {
-    background-color: var(--btn-secondary-bg);
-    color: white;
-}
-
-
-/* --- Theme Panel Styles --- */
+.form-buttons { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+.form-buttons button { padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; }
+.btn-primary { background-color: #3b82f6; color: white; }
+.btn-secondary { background-color: var(--btn-secondary-bg); color: white; }
 #theme-btn {
     position: fixed;
     bottom: 25px;
@@ -261,30 +310,16 @@ body {
     opacity: 0.8;
     transition: transform 0.2s, opacity 0.2s;
 }
-
-#theme-btn:hover {
-    opacity: 1;
-    transform: scale(1.1);
-}
-
+#theme-btn:hover { opacity: 1; transform: scale(1.1); }
 #theme-panel {
-    position: fixed;
     bottom: 80px;
     right: 20px;
-    background-color: var(--modal-bg);
-    padding: 15px;
-    border-radius: 8px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
     display: flex;
     flex-direction: column;
     gap: 10px;
-    z-index: 999;
 }
-
-#theme-panel.hidden {
-    display: none;
-}
-
+#theme-panel.custom-view h3,
+#theme-panel.custom-view .theme-option { display: none; }
 .theme-option {
     padding: 8px 12px;
     border: 1px solid var(--input-border);
@@ -294,41 +329,181 @@ body {
     cursor: pointer;
     text-align: left;
 }
-
-.theme-option:hover {
-    background-color: var(--link-bg-hover);
+.theme-option:hover { background-color: var(--link-bg-hover); }
+#custom-theme-panel.hidden { display: none; }
+#custom-theme-panel { border-top: 1px solid var(--input-border); margin-top: 10px; padding-top: 10px; }
+.color-picker-group { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.color-picker-group label { font-size: 14px; }
+.color-picker-group input[type="color"] {
+    width: 60px;
+    height: 30px;
+    border: 1px solid var(--input-border);
+    padding: 2px;
+    background: none;
+    cursor: pointer;
 }
-
-
 /* --- Responsiveness --- */
 @media (max-width: 600px) {
-    #greeting {
-        font-size: 35px;
-    }
-
-    #clock {
-        font-size: 55px;
-    }
-
-    #date {
-        font-size: 1rem;
-    }
-
-    #add-link-btn {
-        width: 45px;
-        height: 45px;
-        font-size: 25px;
-        bottom: 15px;
-        right: 15px;
-    }
-
-    #theme-btn {
-        bottom: 15px;
-        right: 70px;
-    }
-
-    #theme-panel {
-        bottom: 70px;
-        right: 15px;
-    }
+    #greeting { font-size: 35px; }
+    #clock { font-size: 55px; }
+    #date { font-size: 1rem; }
+    #add-link-btn { width: 45px; height: 45px; font-size: 25px; bottom: 15px; right: 15px; }
+    #theme-btn { bottom: 15px; right: 70px; }
+    #theme-panel { bottom: 70px; right: 15px; }
 }
+/* --- FLASHLIGHT EFFECT --- */
+body.flashlight-on {
+    background: radial-gradient(circle at var(--x, 50%) var(--y, 50%), rgba(0,0,0,0.0) 0%, rgba(0,0,0,0.9) 80%), var(--bg-gradient);
+    transition: background 0.3s ease;
+}
+
+.link-item {
+    position: relative;
+    --mouse-x: 50%;
+    --mouse-y: 50%;
+    --spotlight-size: 120px;
+    transition: transform 0.2s ease;
+}
+
+.link-anchor::before {
+    content: '';
+    position: absolute;
+    top: calc(var(--mouse-y) - var(--spotlight-size)/2);
+    left: calc(var(--mouse-x) - var(--spotlight-size)/2);
+    width: var(--spotlight-size);
+    height: var(--spotlight-size);
+    background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0) 70%);
+    border-radius: 50%;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.link-item:hover .link-anchor::before {
+    opacity: 1;
+}
+
+/* --- FLASHLIGHT & BUTTONS --- */
+#flashlight-btn {
+    position: fixed;
+    bottom: 25px;
+    right: 150px;
+    background: var(--accent-color);
+    border: none;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    font-size: 28px;
+    cursor: pointer;
+    transition: transform 0.2s ease, background-color 0.2s ease;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+#flashlight-btn.active { box-shadow: 0 0 15px var(--accent-color); transform: scale(1.1); }
+
+#mute-btn {
+    position: fixed;
+    bottom: 25px;
+    right: 210px;
+    background: var(--accent-color);
+    border: none;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    font-size: 24px;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: transform 0.2s ease, background-color 0.2s ease;
+}
+#mute-btn:hover { transform: scale(1.1); }
+
+/* --- Overlay Radial Spotlight --- */
+#page-overlay {
+    background: radial-gradient(circle 300px at var(--x, 50%) var(--y, 50%), rgba(0,0,0,0) 0%, rgba(0,0,0,0.8) 100%);
+    transition: opacity 0.3s ease, background 0.3s ease;
+}
+/* --- FLASHLIGHT EFFECT (Updated) --- */
+.link-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle 120px at var(--mouse-x, 50%) var(--mouse-y, 50%), var(--flashlight-color), transparent 70%);
+    opacity: 0;
+    pointer-events: none;
+    z-index: 1;
+    transition: opacity 0.3s ease, background-position 0.1s ease, background-size 0.2s ease;
+    mix-blend-mode: lighten;
+}
+
+.link-item:hover::before,
+body.flashlight-on .link-item::before {
+    opacity: 1;
+}
+
+.link-item:hover::before {
+    background-size: 150px; /* Slight hover enlargement */
+}
+
+/* --- Body-wide spotlight overlay --- */
+body.flashlight-on {
+    --x: 50%;
+    --y: 50%;
+    background: radial-gradient(circle 300px at var(--x) var(--y), rgba(255,255,255,0.08), transparent 70%), var(--bg-gradient);
+    transition: background 0.2s ease;
+}
+
+/* --- FLASHLIGHT EFFECT --- */
+body.flashlight-on::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 999;
+    background: radial-gradient(
+        circle 300px at var(--x, 50%) var(--y, 50%),
+        var(--flashlight-color),
+        transparent 70%
+    );
+    transition: background 0.2s ease;
+}
+
+.link-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(
+        circle 120px at var(--mouse-x, 50%) var(--mouse-y, 50%),
+        var(--flashlight-color),
+        transparent
+    );
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.link-item:hover::before,
+body.flashlight-on .link-item::before {
+    opacity: 1;
+}
+
+#flashlight-btn:hover { transform: scale(1.15); }
+#flashlight-btn:active { transform: scale(1.05); }
+#mute-btn:hover { transform: scale(1.15); }
+#mute-btn:active { transform: scale(1.05); }
+/* --- FLASHLIGHT COLOR VARIATIONS --- */
+body.flashlight-on[data-flashlight='warm'] { --flashlight-color: rgba(  255, 200, 100, 0.3); }
+body.flashlight-on[data-flashlight='cool'] { --flashlight-color: rgba( 100, 200, 255, 0.3); }
+body.flashlight-on[data-flashlight='neutral'] { --flashlight-color: rgba( 255, 255, 255, 0.3); }
