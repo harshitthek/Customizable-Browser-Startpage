@@ -460,6 +460,97 @@ if (document.readyState === 'loading') {
     initSearch();
     initQuote();
     initBackgroundSettings();
+    initGitHub();
+}
+
+// === GITHUB WIDGET ===
+async function initGitHub() {
+    const profileDiv = document.getElementById('github-profile');
+    const reposDiv = document.getElementById('github-repos');
+    const usernameInput = document.getElementById('gh-username-input');
+    const updateBtn = document.getElementById('gh-update-btn');
+
+    if (!profileDiv) return;
+
+    const savedUsername = localStorage.getItem('githubUsername') || 'harshitthek';
+    usernameInput.value = savedUsername;
+
+    async function loadGitHubData(username) {
+        try {
+            profileDiv.innerHTML = '<div class="gh-profile-loading">Loading...</div>';
+            reposDiv.innerHTML = '';
+
+            const [profileRes, reposRes] = await Promise.all([
+                fetch(`https://api.github.com/users/${username}`),
+                fetch(`https://api.github.com/users/${username}/repos?sort=updated&per_page=5`)
+            ]);
+
+            if (!profileRes.ok) throw new Error('User not found');
+
+            const profile = await profileRes.json();
+            const repos = await reposRes.json();
+
+            // Find top starred repo
+            const topRepo = repos.reduce((max, repo) => repo.stargazers_count > (max.stargazers_count || 0) ? repo : max, {});
+
+            profileDiv.innerHTML = `
+                <div class="gh-profile-card">
+                    <img src="${profile.avatar_url}" class="gh-avatar" alt="${profile.login}">
+                    <div class="gh-info">
+                        <div class="gh-name">${profile.name || profile.login}</div>
+                        <div class="gh-bio">${profile.bio || 'No bio available'}</div>
+                    </div>
+                </div>
+                <div class="gh-stats-grid">
+                    <div class="gh-stat-box">
+                        <span class="stat-value">${profile.public_repos}</span>
+                        <span class="stat-label">Repositories</span>
+                    </div>
+                    <div class="gh-stat-box">
+                        <span class="stat-value">${profile.followers}</span>
+                        <span class="stat-label">Followers</span>
+                    </div>
+                    <div class="gh-stat-box">
+                        <span class="stat-value">${profile.following}</span>
+                        <span class="stat-label">Following</span>
+                    </div>
+                    <div class="gh-stat-box">
+                        <span class="stat-value">${profile.public_gists}</span>
+                        <span class="stat-label">Gists</span>
+                    </div>
+                </div>
+                ${topRepo.name ? `
+                    <div class="gh-top-repo" onclick="window.open('${topRepo.html_url}', '_blank')">
+                        <div class="gh-top-repo-title">🏆 Most Starred</div>
+                        <div class="gh-top-repo-name">${topRepo.name}</div>
+                        <div class="gh-top-repo-stars">⭐ ${topRepo.stargazers_count} stars</div>
+                    </div>
+                ` : ''}
+            `;
+
+            reposDiv.innerHTML = repos.map(repo => `
+                <div class="gh-repo" onclick="window.open('${repo.html_url}', '_blank')">
+                    <div class="gh-repo-name">${repo.name}</div>
+                    <div class="gh-repo-desc">${repo.description || 'No description'}</div>
+                    <div class="gh-repo-meta">
+                        ${repo.language ? `<span class="gh-lang">● ${repo.language}</span>` : ''}
+                        <span class="gh-stars">⭐ ${repo.stargazers_count}</span>
+                    </div>
+                </div>
+            `).join('');
+
+            localStorage.setItem('githubUsername', username);
+        } catch (error) {
+            profileDiv.innerHTML = `<div class="gh-profile-loading" style="color: #ef4444;">Error: ${error.message}</div>`;
+        }
+    }
+
+    updateBtn.addEventListener('click', () => {
+        const username = usernameInput.value.trim();
+        if (username) loadGitHubData(username);
+    });
+
+    loadGitHubData(savedUsername);
 }
 
 // === BACKGROUND CUSTOMIZATION ===
