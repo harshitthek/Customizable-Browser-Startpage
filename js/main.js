@@ -49,15 +49,15 @@ function updateTimeAndGreeting() {
     const hours = String(now.getHours()).padStart(2, '0');
     const minutes = String(now.getMinutes()).padStart(2, '0');
     const seconds = String(now.getSeconds()).padStart(2, '0');
-    if(clockElement) clockElement.textContent = `${hours}:${minutes}:${seconds}`;
+    if (clockElement) clockElement.textContent = `${hours}:${minutes}:${seconds}`;
 
     // Compute greeting
     const hour = now.getHours();
     const greetingText = hour < 12 ? "Good morning, "
-                       : hour < 18 ? "Good afternoon, "
-                                   : "Good evening, ";
+        : hour < 18 ? "Good afternoon, "
+            : "Good evening, ";
     // Safer update: find the first TEXT_NODE child and change it
-    if(greetingElement) {
+    if (greetingElement) {
         const textNode = Array.from(greetingElement.childNodes)
             .find(node => node.nodeType === Node.TEXT_NODE);
         if (textNode) textNode.textContent = greetingText;
@@ -66,7 +66,7 @@ function updateTimeAndGreeting() {
 
 function handleName() {
     const savedName = localStorage.getItem('username');
-    if(nameElement) nameElement.textContent = savedName || "Guest";
+    if (nameElement) nameElement.textContent = savedName || "Guest";
 }
 
 function playSound(soundEl) {
@@ -160,7 +160,7 @@ function applyAccentColor(color) { // Needed for custom theme
 function applyTheme(theme) {
     // Only remove custom accent if NOT applying custom theme
     if (theme !== 'custom') {
-         document.body.style.removeProperty('--accent-color');
+        document.body.style.removeProperty('--accent-color');
     }
     document.body.dataset.theme = theme;
     localStorage.setItem('savedTheme', theme);
@@ -215,15 +215,15 @@ function initializeInteractiveEffects() {
         linksContainer.addEventListener('mousemove', (e) => {
             const linkAnchor = e.target.closest('.link-anchor'); // Find the anchor tag
             if (linkAnchor) {
-                 const linkItem = linkAnchor.parentElement; // Get the parent .link-item
-                 if (linkItem) {
+                const linkItem = linkAnchor.parentElement; // Get the parent .link-item
+                if (linkItem) {
                     const rect = linkItem.getBoundingClientRect(); // Use linkItem for position calculation
                     const x = e.clientX - rect.left;
                     const y = e.clientY - rect.top;
                     // console.log(`Mousemove on anchor: x=${x}, y=${y}`); // Uncomment for detailed tracking
                     linkItem.style.setProperty('--mouse-x', `${x}px`);
                     linkItem.style.setProperty('--mouse-y', `${y}px`);
-                 }
+                }
             }
         });
 
@@ -250,11 +250,11 @@ function initializeInteractiveEffects() {
 
         // Handle mouseenter for sound
         linksContainer.addEventListener('mouseover', (e) => {
-             const linkItem = e.target.closest('.link-item');
-             if(linkItem) {
-                 // console.log("Mouse entered item index:", linkItem.dataset.index); // Uncomment for detailed tracking
-                 playSound(flashlightSound);
-             }
+            const linkItem = e.target.closest('.link-item');
+            if (linkItem) {
+                // console.log("Mouse entered item index:", linkItem.dataset.index); // Uncomment for detailed tracking
+                playSound(flashlightSound);
+            }
         });
 
     } else {
@@ -303,23 +303,23 @@ document.addEventListener('DOMContentLoaded', () => {
             if (theme) applyTheme(theme);
         } else if (target.id === 'custom-theme-btn') {
             themePanel.classList.add('custom-view');
-            if(customThemePanel) customThemePanel.classList.remove('hidden');
+            if (customThemePanel) customThemePanel.classList.remove('hidden');
             const savedAccent = localStorage.getItem('customAccentColor') || '#3b82f6';
-            if(accentColorInput) accentColorInput.value = savedAccent;
+            if (accentColorInput) accentColorInput.value = savedAccent;
         } else if (target.id === 'save-custom-theme-btn') {
-             if(accentColorInput) {
+            if (accentColorInput) {
                 const newColor = accentColorInput.value;
                 localStorage.setItem('customAccentColor', newColor);
                 applyTheme('custom'); // Apply custom theme which also applies accent color
-             }
+            }
         } else if (target.id === 'back-to-themes-btn') { // CORRECTED BACK BUTTON LOGIC
             themePanel.classList.remove('custom-view');
-            if(customThemePanel) customThemePanel.classList.add('hidden');
+            if (customThemePanel) customThemePanel.classList.add('hidden');
             loadTheme(); // Reload last saved theme
         }
     });
 
-     if (accentColorInput) accentColorInput.addEventListener('input', () => {
+    if (accentColorInput) accentColorInput.addEventListener('input', () => {
         applyAccentColor(accentColorInput.value);
         document.body.dataset.theme = 'custom'; // Ensure custom theme is active for preview
     });
@@ -327,16 +327,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (contextEditBtn) contextEditBtn.addEventListener('click', () => {
         if (contextMenuLinkIndex !== null) openEditModal(contextMenuLinkIndex);
-        if(contextMenu) contextMenu.classList.add('hidden');
+        if (contextMenu) contextMenu.classList.add('hidden');
     });
     // Corrected deleteLink call
     if (contextDeleteBtn) contextDeleteBtn.addEventListener('click', () => {
         if (contextMenuLinkIndex !== null) {
-             // Find the element to pass for animation
-             const linkElement = linksContainer ? linksContainer.querySelector(`.link-item[data-index="${contextMenuLinkIndex}"]`) : null;
-             deleteLink(contextMenuLinkIndex, linkElement);
+            // Find the element to pass for animation
+            const linkElement = linksContainer ? linksContainer.querySelector(`.link-item[data-index="${contextMenuLinkIndex}"]`) : null;
+            deleteLink(contextMenuLinkIndex, linkElement);
         }
-        if(contextMenu) contextMenu.classList.add('hidden');
+        if (contextMenu) contextMenu.classList.add('hidden');
     });
 
     if (flashlightBtn) flashlightBtn.addEventListener('click', () => {
@@ -364,3 +364,98 @@ document.addEventListener('DOMContentLoaded', () => {
     loadLinks(); // This will call initializeInteractiveEffects internally
 });
 
+// --- Particle Animation ---
+function initParticles() {
+    const canvas = document.getElementById('particle-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    const particles = [];
+    class Particle {
+        constructor() {
+            this.x = Math.random() * canvas.width;
+            this.y = Math.random() * canvas.height;
+            this.vx = (Math.random() - 0.5) * 0.5;
+            this.vy = (Math.random() - 0.5) * 0.5;
+            this.radius = Math.random() * 2;
+        }
+        update() {
+            this.x += this.vx;
+            this.y += this.vy;
+            if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
+            if (this.y < 0 || this.y > canvas.height) this.vy *= -1;
+        }
+        draw() {
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+    for (let i = 0; i < 80; i++) particles.push(new Particle());
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        particles.forEach(p => { p.update(); p.draw(); });
+        requestAnimationFrame(animate);
+    }
+    animate();
+    window.addEventListener('resize', () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    });
+}
+
+// --- Search Widget ---
+function initSearch() {
+    const searchInput = document.getElementById('search-input');
+    if (!searchInput) return;
+    searchInput.addEventListener('input', (e) => {
+        const query = e.target.value.toLowerCase();
+        document.querySelectorAll('.link-item').forEach(item => {
+            const name = item.querySelector('.link-name').textContent.toLowerCase();
+            item.style.display = name.includes(query) ? '' : 'none';
+        });
+    });
+    searchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            searchInput.value = '';
+            document.querySelectorAll('.link-item').forEach(item => item.style.display = '');
+        }
+    });
+}
+
+// --- Quote Widget ---
+const quotes = [
+    { text: 'The only way to do great work is to love what you do.', author: 'Steve Jobs' },
+    { text: 'Innovation distinguishes between a leader and a follower.', author: 'Steve Jobs' },
+    { text: 'Code is like humor. When you have to explain it, it is bad.', author: 'Cory House' },
+    { text: 'Simplicity is the soul of efficiency.', author: 'Austin Freeman' },
+    { text: 'First, solve the problem. Then, write the code.', author: 'John Johnson' }
+];
+function initQuote() {
+    const quoteText = document.getElementById('quote-text');
+    const quoteAuthor = document.getElementById('quote-author');
+    const widget = document.getElementById('quote-widget');
+    if (!quoteText || !quoteAuthor) return;
+    function showQuote() {
+        const q = quotes[Math.floor(Math.random() * quotes.length)];
+        quoteText.textContent = `"${q.text}"`;
+        quoteAuthor.textContent = `- ${q.author}`;
+    }
+    showQuote();
+    if (widget) widget.addEventListener('click', showQuote);
+}
+
+// Initialize on DOM ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        initParticles();
+        initSearch();
+        initQuote();
+    });
+} else {
+    initParticles();
+    initSearch();
+    initQuote();
+}

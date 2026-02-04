@@ -1,19 +1,37 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Startpage</title>
+    <title>DailyCosmos</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
     <script src="js/main.js" defer></script>
 </head>
+
 <body data-theme="slate">
 
     <!-- Top Right UI Controls -->
     <div class="top-right-controls">
+        <button id="add-link-btn" title="Add New Link">➕</button>
         <button id="theme-btn" title="Change theme">🎨</button>
-        <button id="flashlight-btn" title="Toggle Flashlight">🔦</button>
-        <button id="mute-btn" title="Mute/Unmute Sounds">🔊</button>
+    </div>
+
+    <!-- Particle Background -->
+    <canvas id="particle-canvas"></canvas>
+
+    <!-- Widget Panel -->
+    <div id="widget-panel">
+        <div id="search-widget" class="widget">
+            <input type="text" id="search-input" placeholder="🔍 Search bookmarks..." />
+        </div>
+        <div id="quote-widget" class="widget">
+            <p id="quote-text">"Loading..."</p>
+            <span id="quote-author">- Author</span>
+        </div>
     </div>
 
     <main>
@@ -24,13 +42,14 @@
         </div>
         <section id="links-container"></section>
     </main>
-    
+
     <!-- Panels, Modals, and Audio -->
+    <div id="toast-container"></div>
     <div id="context-menu" class="panel hidden">
         <button id="context-edit-btn">✏️ Edit</button>
         <button id="context-delete-btn">❌ Delete</button>
     </div>
-    
+
     <div id="theme-panel" class="panel hidden">
         <h3>Themes</h3>
         <button class="theme-option" data-theme="slate">Dark Slate</button>
@@ -50,12 +69,12 @@
             </div>
         </div>
     </div>
-    
+
     <div id="add-link-modal" class="modal-overlay hidden">
         <div class="modal-content panel">
             <button class="close-btn">&times;</button>
             <h2 id="modal-title">Add New Link</h2>
-            <form id="add-link-form">
+            <form id="add-link-form" novalidate>
                 <div class="form-group">
                     <label for="link-name">Name</label>
                     <input type="text" id="link-name-input" required autocomplete="off">
@@ -72,7 +91,8 @@
         </div>
     </div>
 
-    <audio id="flashlight-sound" src="https://assets.mixkit.co/sfx/preview/mixkit-light-switch-flick-1714.mp3" preload="auto"></audio>
+    <audio id="flashlight-sound" src="https://assets.mixkit.co/sfx/preview/mixkit-light-switch-flick-1714.mp3"
+        preload="auto"></audio>
 </body>
-</html>
 
+</html>
