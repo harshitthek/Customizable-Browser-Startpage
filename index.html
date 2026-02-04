@@ -52,6 +52,7 @@
         <div class="container">
             <h1 id="greeting">Good day, <span id="name">Guest</span></h1>
             <div id="clock">--:--:--</div>
+            <button id="clock-settings-btn" class="clock-settings-icon" title="Clock Settings">⚙️</button>
             <div id="date"></div>
         </div>
         <section id="links-container"></section>
@@ -104,6 +105,21 @@
             <input type="range" id="bg-brightness" min="50" max="150" value="100">
         </div>
         <button type="button" class="btn-secondary" id="reset-bg-btn">Reset to Gradient</button>
+    </div>
+
+    <div id="clock-settings-panel" class="panel hidden">
+        <button class="close-btn">&times;</button>
+        <h3>Clock Settings</h3>
+        <div class="form-group">
+            <label>
+                <input type="checkbox" id="clock-24hr"> 24-hour format
+            </label>
+        </div>
+        <div class="form-group">
+            <label>
+                <input type="checkbox" id="clock-seconds" checked> Show seconds
+            </label>
+        </div>
     </div>
 
     <div id="add-link-modal" class="modal-overlay hidden">

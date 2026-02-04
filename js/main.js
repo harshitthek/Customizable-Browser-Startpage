@@ -44,13 +44,37 @@ function setDate() {
     if (dateElement) dateElement.textContent = now.toLocaleDateString(undefined, dateOptions);
 }
 
-function updateTimeAndGreeting() {
-    const now = new Date();
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    const seconds = String(now.getSeconds()).padStart(2, '0');
-    if (clockElement) clockElement.textContent = `${hours}:${minutes}:${seconds}`;
+function updateClock() {
+    const clockElement = document.getElementById('clock');
+    if (!clockElement) return;
 
+    const now = new Date();
+    const use24Hr = localStorage.getItem('clock24hr') === 'true';
+    const showSeconds = localStorage.getItem('clockSeconds') !== 'false'; // default true
+
+    let hours = now.getHours();
+    let minutes = now.getMinutes();
+    const seconds = now.getSeconds();
+    let ampm = '';
+
+    if (!use24Hr) {
+        ampm = hours >= 12 ? ' PM' : ' AM';
+        hours = hours % 12 || 12;
+    }
+
+    const h = String(hours).padStart(2, '0');
+    const m = String(minutes).padStart(2, '0');
+    const s = String(seconds).padStart(2, '0');
+
+    if (showSeconds) {
+        clockElement.textContent = `${h}:${m}:${s}${ampm}`;
+    } else {
+        clockElement.textContent = `${h}:${m}${ampm}`;
+    }
+}
+
+function updateGreeting() {
+    const now = new Date();
     // Compute greeting
     const hour = now.getHours();
     const greetingText = hour < 12 ? "Good morning, "
@@ -354,16 +378,61 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Initializations ---
     function startClock() {
-        updateTimeAndGreeting();
+        updateClock();
         setDate();
-        setInterval(updateTimeAndGreeting, 1000);
+        setInterval(updateClock, 1000);
     }
     updateMuteButton(); // Call on load
     startClock();
     handleName();
     loadTheme();
     loadLinks(); // This will call initializeInteractiveEffects internally
+    initKeyboardShortcuts();
+    initClockSettings();
 });
+
+// === KEYBOARD SHORTCUTS ===
+function initKeyboardShortcuts() {
+    document.addEventListener('keydown', (e) => {
+        // Don't trigger shortcuts when typing in inputs
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+            // ESC to blur input
+            if (e.key === 'Escape') {
+                e.target.blur();
+                document.querySelectorAll('.panel').forEach(p => p.classList.add('hidden'));
+                document.querySelectorAll('.modal-overlay').forEach(m => m.classList.add('hidden'));
+            }
+            return;
+        }
+
+        // Prevent default for our shortcuts
+        const shortcuts = ['/', 'n', 'N', 'b', 'B', 't', 'T'];
+        if (shortcuts.includes(e.key)) e.preventDefault();
+
+        switch (e.key) {
+            case '/':
+                document.getElementById('search-input')?.focus();
+                break;
+            case 'n':
+            case 'N':
+                document.getElementById('add-link-btn')?.click();
+                break;
+            case 'b':
+            case 'B':
+                document.getElementById('bg-settings-btn')?.click();
+                break;
+            case 't':
+            case 'T':
+                document.getElementById('theme-btn')?.click();
+                break;
+            case 'Escape':
+                document.querySelectorAll('.panel').forEach(p => p.classList.add('hidden'));
+                document.querySelectorAll('.modal-overlay').forEach(m => m.classList.add('hidden'));
+                break;
+        }
+    });
+}
+
 
 // --- Particle Animation ---
 function initParticles() {
@@ -454,6 +523,8 @@ if (document.readyState === 'loading') {
         initParticles();
         initSearch();
         initQuote();
+        initBackgroundSettings();
+        initGitHub();
     });
 } else {
     initParticles();
@@ -485,8 +556,12 @@ async function initGitHub() {
                 fetch(`https://api.github.com/users/${username}/repos?sort=updated&per_page=5`)
             ]);
 
-            if (!profileRes.ok) throw new Error('User not found');
-
+            if (profileRes.status === 403) {
+                throw new Error('403 Forbidden - API Rate Limit');
+            }
+            if (!profileRes.ok) {
+                throw new Error('User not found');
+            }
             const profile = await profileRes.json();
             const repos = await reposRes.json();
 
@@ -541,7 +616,21 @@ async function initGitHub() {
 
             localStorage.setItem('githubUsername', username);
         } catch (error) {
-            profileDiv.innerHTML = `<div class="gh-profile-loading" style="color: #ef4444;">Error: ${error.message}</div>`;
+            const is403 = error.message.includes('403') || error.message.includes('Forbidden');
+            const errorMsg = is403
+                ? 'GitHub API Rate Limit Exceeded'
+                : error.message;
+            const helpText = is403
+                ? 'Too many requests. Try again in ~1 hour or use a different network.'
+                : 'Check if username exists on GitHub';
+
+            profileDiv.innerHTML = `
+                <div class="gh-profile-loading" style="color: #ef4444; text-align: center; padding: 20px;">
+                    <div style="font-size: 24px; margin-bottom: 10px;">⚠️</div>
+                    <div style="font-weight: 600; margin-bottom: 8px;">${errorMsg}</div>
+                    <div style="font-size: 11px; opacity: 0.8; line-height: 1.5;">${helpText}</div>
+                </div>
+            `;
         }
     }
 
@@ -644,4 +733,52 @@ function initBackgroundSettings() {
     function applyFilters() {
         overlay.style.filter = `blur(${blurSlider.value}px) brightness(${brightnessSlider.value}%)`;
     }
+}
+
+// === CLOCK SETTINGS ===
+function initClockSettings() {
+    const settingsBtn = document.getElementById('clock-settings-btn');
+    const panel = document.getElementById('clock-settings-panel');
+    const clock24hr = document.getElementById('clock-24hr');
+    const clockSeconds = document.getElementById('clock-seconds');
+
+    if (!settingsBtn) return;
+
+    // Load settings
+    clock24hr.checked = localStorage.getItem('clock24hr') === 'true';
+    clockSeconds.checked = localStorage.getItem('clockSeconds') !== 'false';
+
+    // Toggle panel
+    settingsBtn.addEventListener('click', () => {
+        panel.classList.toggle('hidden');
+        document.querySelectorAll('.panel').forEach(p => {
+            if (p !== panel) p.classList.add('hidden');
+        });
+    });
+
+    // Close button
+    const closeBtn = panel.querySelector('.close-btn');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+            panel.classList.add('hidden');
+        });
+    }
+
+    // Click outside to close
+    document.addEventListener('click', (e) => {
+        if (!panel.contains(e.target) && !settingsBtn.contains(e.target) && !panel.classList.contains('hidden')) {
+            panel.classList.add('hidden');
+        }
+    });
+
+    // Save settings
+    clock24hr.addEventListener('change', () => {
+        localStorage.setItem('clock24hr', clock24hr.checked);
+        updateClock();
+    });
+
+    clockSeconds.addEventListener('change', () => {
+        localStorage.setItem('clockSeconds', clockSeconds.checked);
+        updateClock();
+    });
 }
