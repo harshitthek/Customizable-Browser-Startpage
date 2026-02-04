@@ -882,3 +882,26 @@ body.has-custom-bg #particle-canvas { display: none; }
     .link-item { width: 80px !important; }
     .favicon { width: 50px !important; height: 50px !important; }
 }
+
+
+/* Search Engine Switcher */
+#search-engine-container { display: flex; align-items: center; justify-content: center; margin: 30px 0; gap: 15px; cursor: pointer; transition: all 0.3s; }
+#search-engine-container:hover { transform: scale(1.05); }
+#search-engine-icon { width: 80px; height: 80px; border-radius: 20px; background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center; border: 2px solid rgba(255,255,255,0.2); box-shadow: 0 8px 32px rgba(0,0,0,0.2); transition: all 0.3s; }
+#search-engine-icon:hover { background: rgba(255,255,255,0.2); border-color: var(--accent-color); box-shadow: 0 12px 40px rgba(59,130,246,0.4); }
+#engine-icon { width: 48px; height: 48px; }
+#engine-name { font-size: 18px; font-weight: 500; color: var(--text-primary); }
+
+
+/* Main Search Bar (Redesigned) */
+#main-search-container { display: flex; align-items: center; max-width: 600px; margin: 30px auto; background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border: 2px solid rgba(255,255,255,0.2); border-radius: 50px; padding: 8px 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.2); transition: all 0.3s; }
+#main-search-container:focus-within { border-color: var(--accent-color); box-shadow: 0 8px 32px rgba(59,130,246,0.4); }
+#search-engine-icon { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s; }
+#search-engine-icon:hover { transform: scale(1.1); }
+#engine-icon { width: 28px; height: 28px; }
+#main-search-input { flex: 1; background: transparent; border: none; outline: none; color: var(--text-primary); font-size: 16px; padding: 12px 15px; }
+#main-search-input::placeholder { color: var(--text-secondary); opacity: 0.7; }
+
+
+/* Search Bar Top Position Override */
+#main-search-container { margin: 20px auto 40px auto !important; }

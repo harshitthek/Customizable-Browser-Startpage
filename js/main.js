@@ -392,6 +392,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initKeyboardShortcuts();
     initClockSettings();
     initExportImport();
+    initSearchEngineSwitcher();
 });
 
 // === KEYBOARD SHORTCUTS ===
@@ -858,4 +859,48 @@ function initExportImport() {
         reader.readAsText(file);
         e.target.value = ''; // Reset input
     });
+}
+
+// === SEARCH ENGINE SWITCHER ===
+function initSearchEngineSwitcher() {
+    const container = document.getElementById('search-engine-container');
+    const icon = document.getElementById('engine-icon');
+    const name = document.getElementById('engine-name');
+
+    if (!container) return;
+
+    const engines = [
+        { name: 'Google', icon: 'https://www.google.com/favicon.ico', url: 'https://www.google.com/search?q=' },
+        { name: 'DuckDuckGo', icon: 'https://duckduckgo.com/favicon.ico', url: 'https://duckduckgo.com/?q=' },
+        { name: 'Bing', icon: 'https://www.bing.com/favicon.ico', url: 'https://www.bing.com/search?q=' },
+        { name: 'Brave', icon: 'https://brave.com/static-assets/images/brave-favicon.png', url: 'https://search.brave.com/search?q=' }
+    ];
+
+    let currentIndex = parseInt(localStorage.getItem('searchEngineIndex')) || 0;
+
+    function updateEngine() {
+        const engine = engines[currentIndex];
+        icon.src = engine.icon;
+        name.textContent = engine.name;
+        localStorage.setItem('searchEngineIndex', currentIndex);
+    }
+
+    container.addEventListener('click', () => {
+        currentIndex = (currentIndex + 1) % engines.length;
+        updateEngine();
+    });
+
+    // Handle search from main search bar
+    const mainSearchInput = document.getElementById('main-search-input');
+    if (mainSearchInput) {
+        mainSearchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && e.target.value.trim()) {
+                const query = e.target.value.trim();
+                window.open(engines[currentIndex].url + encodeURIComponent(query), '_blank');
+                e.target.value = '';
+            }
+        });
+    }
+
+    updateEngine();
 }
