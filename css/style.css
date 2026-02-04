@@ -630,3 +630,54 @@ main {
         font-size: 55px;
     }
 }
+
+/* === SUBTLE BOOKMARK ENHANCEMENTS === */
+.link-item {
+    width: 115px !important;
+    border-radius: 18px !important;
+    animation: fadeIn 0.4s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.link-item:hover {
+    transform: translateY(-5px) scale(1.03) !important;
+    box-shadow: 0 12px 35px rgba(59, 130, 246, 0.35) !important;
+}
+
+.icon-container {
+    width: 75px !important;
+    height: 75px !important;
+}
+
+.fallback-icon {
+    font-size: 38px !important;
+}
+
+.link-actions {
+    gap: 6px !important;
+}
+
+.edit-btn,
+.delete-btn {
+    width: 26px !important;
+    height: 26px !important;
+}
+
+#links-container:empty::before {
+    content: 'Click ➕ to add bookmarks';
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    color: var(--text-secondary);
+    opacity: 0.4;
+    font-size: 16px;
+}
