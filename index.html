@@ -17,7 +17,8 @@
     <!-- Top Right UI Controls -->
     <div class="top-right-controls">
         <button id="add-link-btn" title="Add New Link">➕</button>
-        <button id="theme-btn" title="Change theme">🎨</button>
+        <button id="bg-settings-btn" title="Background Settings">🖼️</button>
+        <button id="theme-btn" title="Change theme">🌈</button>
     </div>
 
     <!-- Particle Background -->
@@ -68,6 +69,28 @@
                 <button type="button" class="btn-secondary" id="back-to-themes-btn">Back</button>
             </div>
         </div>
+    </div>
+
+    <div id="bg-settings-panel" class="panel hidden">
+        <h3>Background Settings</h3>
+        <div class="form-group">
+            <label>Upload Image</label>
+            <input type="file" id="bg-image-upload" accept="image/*">
+        </div>
+        <div class="form-group">
+            <label>Or Image URL</label>
+            <input type="text" id="bg-image-url" placeholder="https://example.com/image.jpg">
+            <button type="button" class="btn-primary" id="apply-bg-url">Apply</button>
+        </div>
+        <div class="form-group">
+            <label>Blur: <span id="blur-value">5</span>px</label>
+            <input type="range" id="bg-blur" min="0" max="20" value="5">
+        </div>
+        <div class="form-group">
+            <label>Brightness: <span id="brightness-value">100</span>%</label>
+            <input type="range" id="bg-brightness" min="50" max="150" value="100">
+        </div>
+        <button type="button" class="btn-secondary" id="reset-bg-btn">Reset to Gradient</button>
     </div>
 
     <div id="add-link-modal" class="modal-overlay hidden">

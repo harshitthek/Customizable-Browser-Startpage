@@ -146,6 +146,7 @@ function deleteLink(index, linkElement) {
         setTimeout(() => { links.splice(index, 1); saveLinks(); renderLinks(); }, 300);
     }
 }
+//hi
 
 function loadLinks() {
     const savedLinks = localStorage.getItem('savedLinks');
@@ -458,4 +459,98 @@ if (document.readyState === 'loading') {
     initParticles();
     initSearch();
     initQuote();
+    initBackgroundSettings();
+}
+
+// === BACKGROUND CUSTOMIZATION ===
+function initBackgroundSettings() {
+    const bgSettingsBtn = document.getElementById('bg-settings-btn');
+    const bgPanel = document.getElementById('bg-settings-panel');
+    const bgUpload = document.getElementById('bg-image-upload');
+    const bgUrlInput = document.getElementById('bg-image-url');
+    const applyUrlBtn = document.getElementById('apply-bg-url');
+    const blurSlider = document.getElementById('bg-blur');
+    const brightnessSlider = document.getElementById('bg-brightness');
+    const resetBtn = document.getElementById('reset-bg-btn');
+    const blurValue = document.getElementById('blur-value');
+    const brightnessValue = document.getElementById('brightness-value');
+
+    if (!bgSettingsBtn) return;
+
+    let overlay = document.getElementById('custom-bg-overlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'custom-bg-overlay';
+        document.body.insertBefore(overlay, document.body.firstChild);
+    }
+
+    bgSettingsBtn.addEventListener('click', () => {
+        bgPanel.classList.toggle('hidden');
+        document.getElementById('theme-panel')?.classList.add('hidden');
+    });
+
+    const savedBg = localStorage.getItem('customBg');
+    const savedBlur = localStorage.getItem('bgBlur') || '5';
+    const savedBrightness = localStorage.getItem('bgBrightness') || '100';
+
+    if (savedBg) {
+        overlay.style.backgroundImage = `url(${savedBg})`;
+        document.body.classList.add('has-custom-bg');
+    }
+    blurSlider.value = savedBlur;
+    brightnessSlider.value = savedBrightness;
+    blurValue.textContent = savedBlur;
+    brightnessValue.textContent = savedBrightness;
+    applyFilters();
+
+    bgUpload.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            overlay.style.backgroundImage = `url(${event.target.result})`;
+            localStorage.setItem('customBg', event.target.result);
+            document.body.classList.add('has-custom-bg');
+            applyFilters();
+        };
+        reader.readAsDataURL(file);
+    });
+
+    applyUrlBtn.addEventListener('click', () => {
+        const url = bgUrlInput.value.trim();
+        if (!url) return;
+        overlay.style.backgroundImage = `url(${url})`;
+        localStorage.setItem('customBg', url);
+        document.body.classList.add('has-custom-bg');
+        applyFilters();
+    });
+
+    blurSlider.addEventListener('input', (e) => {
+        blurValue.textContent = e.target.value;
+        localStorage.setItem('bgBlur', e.target.value);
+        applyFilters();
+    });
+
+    brightnessSlider.addEventListener('input', (e) => {
+        brightnessValue.textContent = e.target.value;
+        localStorage.setItem('bgBrightness', e.target.value);
+        applyFilters();
+    });
+
+    resetBtn.addEventListener('click', () => {
+        overlay.style.backgroundImage = '';
+        overlay.style.filter = '';
+        document.body.classList.remove('has-custom-bg');
+        localStorage.removeItem('customBg');
+        localStorage.removeItem('bgBlur');
+        localStorage.removeItem('bgBrightness');
+        blurSlider.value = '5';
+        brightnessSlider.value = '100';
+        blurValue.textContent = '5';
+        brightnessValue.textContent = '100';
+    });
+
+    function applyFilters() {
+        overlay.style.filter = `blur(${blurSlider.value}px) brightness(${brightnessSlider.value}%)`;
+    }
 }
