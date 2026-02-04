@@ -56,6 +56,14 @@
             <div id="date"></div>
         </div>
         <section id="links-container"></section>
+
+        <!-- Search Engine Switcher -->
+        <div id="search-engine-container">
+            <div id="search-engine-icon" title="Click to switch search engine">
+                <img src="https://www.google.com/favicon.ico" alt="Search" id="engine-icon">
+            </div>
+            <span id="engine-name">Google</span>
+        </div>
     </main>
 
     <!-- Panels, Modals, and Audio -->
@@ -70,6 +78,9 @@
         <button class="theme-option" data-theme="slate">Dark Slate</button>
         <button class="theme-option" data-theme="light">Light</button>
         <button class="theme-option" data-theme="ocean">Ocean</button>
+        <button class="theme-option" data-theme="cyberpunk">🌃 Cyberpunk</button>
+        <button class="theme-option" data-theme="sunset">🌅 Sunset</button>
+        <button class="theme-option" data-theme="forest">🌲 Forest</button>
         <button class="theme-option" id="custom-theme-btn">Custom</button>
 
         <!-- THIS WAS MISSING - ADDED BACK -->
@@ -105,6 +116,13 @@
             <input type="range" id="bg-brightness" min="50" max="150" value="100">
         </div>
         <button type="button" class="btn-secondary" id="reset-bg-btn">Reset to Gradient</button>
+        <hr style="margin: 20px 0; border: 1px solid rgba(255,255,255,0.1);">
+        <h4 style="font-size: 14px; margin-bottom: 10px;">Backup & Restore</h4>
+        <button type="button" class="btn-primary" id="export-settings-btn" style="width: 100%; margin-bottom: 8px;">⬇️
+            Export All Settings</button>
+        <input type="file" id="import-settings-input" accept=".json" style="display: none;">
+        <button type="button" class="btn-secondary" id="import-settings-btn" style="width: 100%;">⬆️ Import
+            Settings</button>
     </div>
 
     <div id="clock-settings-panel" class="panel hidden">

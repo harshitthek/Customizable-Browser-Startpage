@@ -379,8 +379,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Initializations ---
     function startClock() {
         updateClock();
+        updateGreeting();
         setDate();
         setInterval(updateClock, 1000);
+        setInterval(updateGreeting, 60000); // Update greeting every minute
     }
     updateMuteButton(); // Call on load
     startClock();
@@ -389,6 +391,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadLinks(); // This will call initializeInteractiveEffects internally
     initKeyboardShortcuts();
     initClockSettings();
+    initExportImport();
 });
 
 // === KEYBOARD SHORTCUTS ===
@@ -780,5 +783,79 @@ function initClockSettings() {
     clockSeconds.addEventListener('change', () => {
         localStorage.setItem('clockSeconds', clockSeconds.checked);
         updateClock();
+    });
+}
+
+// === EXPORT/IMPORT SETTINGS ===
+function initExportImport() {
+    const exportBtn = document.getElementById('export-settings-btn');
+    const importBtn = document.getElementById('import-settings-btn');
+    const importInput = document.getElementById('import-settings-input');
+
+    if (!exportBtn) return;
+
+    // Export all settings
+    exportBtn.addEventListener('click', () => {
+        const data = {
+            version: '1.0',
+            exportDate: new Date().toISOString(),
+            settings: {},
+            links: links
+        };
+
+        // Export all localStorage items
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            data.settings[key] = localStorage.getItem(key);
+        }
+
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `dailycosmos-backup-${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+
+        showToast('✅ Settings exported successfully!');
+    });
+
+    // Import trigger
+    importBtn.addEventListener('click', () => {
+        importInput.click();
+    });
+
+    // Import handler
+    importInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const data = JSON.parse(event.target.result);
+
+                // Restore settings
+                if (data.settings) {
+                    Object.keys(data.settings).forEach(key => {
+                        localStorage.setItem(key, data.settings[key]);
+                    });
+                }
+
+                // Restore links
+                if (data.links) {
+                    links = data.links;
+                    saveLinks();
+                    renderLinks();
+                }
+
+                showToast(' Settings imported! Refreshing...');
+                setTimeout(() => location.reload(), 1500);
+            } catch (error) {
+                showToast(' Invalid backup file');
+            }
+        };
+        reader.readAsText(file);
+        e.target.value = ''; // Reset input
     });
 }

@@ -815,3 +815,70 @@ body.has-custom-bg #particle-canvas { display: none; }
 #clock-settings-panel { top: 200px; left: 50%; transform: translateX(-50%); width: 250px; }
 #clock-settings-panel label { display: flex; align-items: center; gap: 8px; cursor: pointer; }
 #clock-settings-panel input[type=checkbox] { width: 18px; height: 18px; cursor: pointer; }
+
+
+/* Widget Toggle/Collapse */
+.widget { position: relative; transition: all 0.3s ease; }
+.widget-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.widget-title { margin: 0 !important; flex: 1; }
+.widget-toggle-btn { background: none; border: none; font-size: 16px; cursor: pointer; opacity: 0.6; transition: all 0.2s; padding: 4px 8px; }
+.widget-toggle-btn:hover { opacity: 1; transform: scale(1.1); }
+.widget.collapsed .widget-content { display: none; }
+.widget.collapsed { padding: 12px 16px; }
+.widget.collapsed .widget-toggle-btn { transform: rotate(180deg); }
+
+
+/* New Themes */
+[data-theme='cyberpunk'] {
+    --grad-1: #0a0e27; --grad-2: #1a1a2e; --grad-3: #16213e; --grad-4: #0f3460;
+    --text-primary: #00ff9f; --text-secondary: #ff00ff; --accent-color: #00ffff;
+    --panel-bg: #16213e; --input-bg: #0a0e27; --input-border: #00ffff; --btn-secondary-bg: #ff00ff;
+}
+[data-theme='sunset'] {
+    --grad-1: #ff6b6b; --grad-2: #ee5a6f; --grad-3: #c44569; --grad-4: #6c5ce7;
+    --text-primary: #ffffff; --text-secondary: #ffeaa7; --accent-color: #fdcb6e;
+    --panel-bg: rgba(238,90,111,0.9); --input-bg: rgba(255,107,107,0.5); --input-border: #fdcb6e; --btn-secondary-bg: #c44569;
+}
+[data-theme='forest'] {
+    --grad-1: #1e3a20; --grad-2: #2d5016; --grad-3: #3a6f2f; --grad-4: #4a7c59;
+    --text-primary: #e8f5e9; --text-secondary: #a5d6a7; --accent-color: #66bb6a;
+    --panel-bg: #2d5016; --input-bg: #1e3a20; --input-border: #4a7c59; --btn-secondary-bg: #3a6f2f;
+}
+
+
+/* === MOBILE RESPONSIVE === */
+@media (max-width: 768px) {
+    /* Stack layout */
+    #widget-panel, #github-panel { position: static; width: 100%; max-width: none; padding: 15px; }
+    #github-panel { margin-top: 20px; }
+    
+    /* Larger touch targets */
+    .top-right-controls button { font-size: 24px; padding: 12px; }
+    button, .link-item { min-height: 48px; }
+    
+    /* Single column bookmarks */
+    #links-container { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)) !important; gap: 12px; }
+    
+    /* Compact clock */
+    #clock { font-size: 48px; }
+    #greeting { font-size: 20px; }
+    
+    /* Full width panels */
+    .panel { left: 10px !important; right: 10px !important; top: 100px !important; width: auto !important; transform: none !important; max-width: none !important; }
+    
+    /* Hide particles on mobile for performance */
+    #particle-canvas { display: none !important; }
+    
+    /* GitHub widget adjustments */
+    .gh-repo { padding: 12px; }
+    .gh-stats-grid { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 480px) {
+    /* Extra small screens */
+    #clock { font-size: 36px; }
+    #greeting { font-size: 18px; }
+    #links-container { grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)) !important; }
+    .link-item { width: 80px !important; }
+    .favicon { width: 50px !important; height: 50px !important; }
+}
