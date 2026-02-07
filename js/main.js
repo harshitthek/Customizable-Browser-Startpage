@@ -320,6 +320,8 @@ document.addEventListener('DOMContentLoaded', () => {
             url = normalizeUrl(url);
         } catch (error) {
             alert('Invalid URL: ' + error.message);
+            linkUrlInput.value = '';
+            linkUrlInput.focus();
             return;
         }
 

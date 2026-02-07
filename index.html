@@ -20,6 +20,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
     <script src="js/main.js" defer></script>
+    <script src="js/privacy.js" defer></script>
 </head>
 
 <body data-theme="slate">
@@ -29,6 +30,7 @@
         <button id="add-link-btn" title="Add New Link">➕</button>
         <button id="bg-settings-btn" title="Background Settings">🖼️</button>
         <button id="theme-btn" title="Change theme">🌈</button>
+        <button id="privacy-btn" title="Privacy & Security">🔒</button>
     </div>
 
     <!-- Particle Background -->
@@ -174,6 +176,12 @@
                 </div>
             </form>
         </div>
+    </div>
+
+    <div id="privacy-panel" class="panel hidden">
+        <h3>Privacy & Security</h3>
+        <p>All data stored locally. No tracking.</p>
+        <button id="clear-all-data-btn" class="btn-danger">Clear All Data</button>
     </div>
 
     <div id="add-link-modal" class="modal-overlay hidden">
