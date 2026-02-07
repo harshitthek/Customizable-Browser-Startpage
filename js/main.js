@@ -310,9 +310,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (addLinkForm) addLinkForm.addEventListener('submit', (e) => {
         e.preventDefault();
-        const name = linkNameInput.value;
-        let url = linkUrlInput.value;
-        if (!url.startsWith('http://') && !url.startsWith('https://')) url = 'https://' + url;
+
+        // SECURITY: Sanitize user input
+        const name = sanitizeInput(linkNameInput.value.trim());
+        let url = linkUrlInput.value.trim();
+
+        // SECURITY: Validate and normalize URL
+        try {
+            url = normalizeUrl(url);
+        } catch (error) {
+            alert('Invalid URL: ' + error.message);
+            return;
+        }
+
+        // Additional validation
+        if (!name || name.length > 100) {
+            alert('Please enter a valid name (1-100 characters)');
+            return;
+        }
+
+        if (!url || url.length > 2048) {
+            alert('URL is too long');
+            return;
+        }
+
         if (editingLinkIndex !== null) links[editingLinkIndex] = { name, url };
         else links.push({ name, url });
         saveLinks();
@@ -393,6 +414,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initClockSettings();
     initExportImport();
     initSearchEngineSwitcher();
+    initSearchBarEffects();
 });
 
 // === KEYBOARD SHORTCUTS ===
@@ -863,11 +885,10 @@ function initExportImport() {
 
 // === SEARCH ENGINE SWITCHER ===
 function initSearchEngineSwitcher() {
-    const container = document.getElementById('search-engine-container');
+    const iconContainer = document.getElementById('search-engine-icon');
     const icon = document.getElementById('engine-icon');
-    const name = document.getElementById('engine-name');
 
-    if (!container) return;
+    if (!iconContainer) return;
 
     const engines = [
         { name: 'Google', icon: 'https://www.google.com/favicon.ico', url: 'https://www.google.com/search?q=' },
@@ -881,11 +902,13 @@ function initSearchEngineSwitcher() {
     function updateEngine() {
         const engine = engines[currentIndex];
         icon.src = engine.icon;
-        name.textContent = engine.name;
+        icon.alt = engine.name;
         localStorage.setItem('searchEngineIndex', currentIndex);
     }
 
-    container.addEventListener('click', () => {
+    // Click on icon container to switch engines
+    iconContainer.addEventListener('click', (e) => {
+        e.stopPropagation();
         currentIndex = (currentIndex + 1) % engines.length;
         updateEngine();
     });
@@ -904,3 +927,154 @@ function initSearchEngineSwitcher() {
 
     updateEngine();
 }
+
+// === GLOBAL PANEL CLOSE ON OUTSIDE CLICK ===
+document.addEventListener('click', (e) => {
+    const panels = document.querySelectorAll('.panel:not(.hidden)');
+    const topButtons = document.querySelectorAll('.top-right-controls button');
+    const clockSettingsBtn = document.getElementById('clock-settings-btn');
+
+    // Check if click is outside all panels and not on any button
+    let clickedButton = false;
+    topButtons.forEach(btn => {
+        if (btn.contains(e.target)) clickedButton = true;
+    });
+    if (clockSettingsBtn && clockSettingsBtn.contains(e.target)) clickedButton = true;
+
+    if (!clickedButton) {
+        panels.forEach(panel => {
+            if (!panel.contains(e.target)) {
+                panel.classList.add('hidden');
+            }
+        });
+    }
+});
+
+// === SEARCH BAR FOCUS EFFECTS ===
+function initSearchBarEffects() {
+    const searchContainer = document.getElementById('main-search-container');
+    const searchInput = document.getElementById('main-search-input');
+    const searchBtn = document.getElementById('search-btn');
+
+    if (!searchInput) return;
+
+    // Focus effect - just scale and glow
+    searchInput.addEventListener('focus', () => {
+        searchContainer.classList.add('focused');
+    });
+
+    // Blur effect - remove focus
+    searchInput.addEventListener('blur', () => {
+        searchContainer.classList.remove('focused');
+    });
+
+    // Search button click
+    if (searchBtn) {
+        searchBtn.addEventListener('click', () => {
+            if (searchInput.value.trim()) {
+                const engines = [
+                    { name: 'Google', url: 'https://www.google.com/search?q=' },
+                    { name: 'DuckDuckGo', url: 'https://duckduckgo.com/?q=' },
+                    { name: 'Bing', url: 'https://www.bing.com/search?q=' },
+                    { name: 'Brave', url: 'https://search.brave.com/search?q=' }
+                ];
+                const currentIndex = parseInt(localStorage.getItem('searchEngineIndex')) || 0;
+                window.open(engines[currentIndex].url + encodeURIComponent(searchInput.value.trim()), '_blank');
+                searchInput.value = '';
+                searchInput.blur();
+            }
+        });
+    }
+}
+
+
+
+
+
+
+// === SECURITY HELPER FUNCTIONS ===
+// Input sanitization to prevent XSS attacks
+function sanitizeInput(input) {
+    if (!input) return '';
+    const temp = document.createElement('div');
+    temp.textContent = input;
+    return temp.innerHTML;
+}
+
+// URL validation - only allow http/https protocols
+function isValidUrl(urlString) {
+    try {
+        const url = new URL(urlString);
+        return ['http:', 'https:'].includes(url.protocol);
+    } catch (error) {
+        return false;
+    }
+}
+
+// Secure URL normalization
+function normalizeUrl(urlString) {
+    if (!urlString) return '';
+    if (!urlString.startsWith('http://') && !urlString.startsWith('https://')) {
+        urlString = 'https://' + urlString;
+    }
+    if (!isValidUrl(urlString)) {
+        throw new Error('Invalid URL protocol. Only HTTP and HTTPS are allowed.');
+    }
+    return urlString;
+}
+
+// Secure favicon URL generation
+function getSecureFaviconUrl(url) {
+    try {
+        const parsedUrl = new URL(url);
+        const domain = parsedUrl.hostname;
+        return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64`;
+    } catch (error) {
+        console.error('Invalid URL for favicon:', error);
+        return 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"%3E%3Ctext y="20" font-size="20"%3E%3C/text%3E%3C/svg%3E';
+    }
+}
+// === API SECURITY ===
+// Secure fetch with timeout
+function secureFetch(url, options = {}, timeoutMs = 5000) {
+    return Promise.race([
+        fetch(url, {
+            ...options,
+            // SECURITY: Ensure credentials are not sent to third parties
+            credentials: 'omit',
+            // SECURITY: Prevent caching of sensitive data
+            cache: options.cache || 'no-store'
+        }),
+        new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Request timeout')), timeoutMs)
+        )
+    ]);
+}
+
+// Rate limiter for API calls
+const apiRateLimiter = {
+    calls: {},
+
+    canCall(apiName, maxCallsPerMinute = 10) {
+        const now = Date.now();
+        const minuteAgo = now - 60000;
+
+        if (!this.calls[apiName]) {
+            this.calls[apiName] = [];
+        }
+
+        // Clean old calls
+        this.calls[apiName] = this.calls[apiName].filter(time => time > minuteAgo);
+
+        if (this.calls[apiName].length >= maxCallsPerMinute) {
+            console.warn(`Rate limit exceeded for ${apiName}`);
+            return false;
+        }
+
+        this.calls[apiName].push(now);
+        return true;
+    }
+};
+
+
+// === PRIVACY CONTROLS ===

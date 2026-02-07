@@ -4,6 +4,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- SECURITY: Content Security Policy to prevent XSS attacks -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; 
+                   script-src 'self'; 
+                   style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; 
+                   img-src 'self' https: data:; 
+                   connect-src 'self' https://api.github.com https://api.quotable.io https://www.google.com; 
+                   font-src 'self' https://fonts.gstatic.com; 
+                   frame-src 'none'; 
+                   object-src 'none'; 
+                   base-uri 'self';">
     <title>DailyCosmos</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -55,6 +65,7 @@
                 <img src="https://www.google.com/favicon.ico" alt="Search" id="engine-icon">
             </div>
             <input type="text" id="main-search-input" placeholder="Search the web...">
+            <button id="search-btn" title="Search">🔍</button>
         </div>
 
         <div class="container">
@@ -81,6 +92,10 @@
         <button class="theme-option" data-theme="cyberpunk">🌃 Cyberpunk</button>
         <button class="theme-option" data-theme="sunset">🌅 Sunset</button>
         <button class="theme-option" data-theme="forest">🌲 Forest</button>
+        <button class="theme-option" data-theme="aurora">✨ Aurora Wave</button>
+        <button class="theme-option" data-theme="northern">🌌 Northern Lights</button>
+        <button class="theme-option" data-theme="midnight">🌙 Midnight</button>
+        <button class="theme-option" data-theme="rosegold">🌹 Rose Gold</button>
         <button class="theme-option" id="custom-theme-btn">Custom</button>
 
         <!-- THIS WAS MISSING - ADDED BACK -->
@@ -161,8 +176,26 @@
         </div>
     </div>
 
-    <audio id="flashlight-sound" src="https://assets.mixkit.co/sfx/preview/mixkit-light-switch-flick-1714.mp3"
-        preload="auto"></audio>
+    <div id="add-link-modal" class="modal-overlay hidden">
+        <div class="modal-content panel">
+            <button class="close-btn">&times;</button>
+            <h3 id="modal-title">Add New Link</h3>
+            <form id="add-link-form">
+                <div class="form-group">
+                    <label for="link-name-input">Name</label>
+                    <input type="text" id="link-name-input" required>
+                </div>
+                <div class="form-group">
+                    <label for="link-url-input">URL</label>
+                    <input type="url" id="link-url-input" required>
+                </div>
+                <div class="form-buttons">
+                    <button type="submit" id="modal-submit-btn" class="btn-primary">Add Link</button>
+                    <button type="button" id="cancel-btn" class="btn-secondary">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </body>
 
 </html>
