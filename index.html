@@ -4,202 +4,208 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- SECURITY: Content Security Policy to prevent XSS attacks -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; 
-                   script-src 'self'; 
-                   style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; 
-                   img-src 'self' https: data:; 
-                   connect-src 'self' https://api.github.com https://api.quotable.io https://www.google.com; 
-                   font-src 'self' https://fonts.gstatic.com; 
-                   frame-src 'none'; 
-                   object-src 'none'; 
-                   base-uri 'self';">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' https: data:; connect-src 'self' https://api.github.com https://api.quotable.io; font-src 'self' https://fonts.gstatic.com; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'none';">
     <title>DailyCosmos</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
     <script src="js/main.js" defer></script>
     <script src="js/privacy.js" defer></script>
 </head>
 
 <body data-theme="slate">
+    <div id="background-layer" aria-hidden="true"></div>
+    <div id="background-scrim" aria-hidden="true"></div>
+    <canvas id="particle-canvas" aria-hidden="true"></canvas>
 
-    <!-- Top Right UI Controls -->
-    <div class="top-right-controls">
-        <button id="add-link-btn" title="Add New Link">➕</button>
-        <button id="bg-settings-btn" title="Background Settings">🖼️</button>
-        <button id="theme-btn" title="Change theme">🌈</button>
-        <button id="privacy-btn" title="Privacy & Security">🔒</button>
-    </div>
-
-    <!-- Particle Background -->
-    <canvas id="particle-canvas"></canvas>
-
-    <!-- Widget Panel -->
-    <div id="widget-panel">
-        <div id="search-widget" class="widget">
-            <input type="text" id="search-input" placeholder="🔍 Search bookmarks..." />
+    <header class="topbar" aria-label="Startpage controls">
+        <div class="brand-mark" aria-label="DailyCosmos">
+            <span class="brand-dot"></span>
+            <span>DailyCosmos</span>
         </div>
-        <div id="quote-widget" class="widget">
-            <p id="quote-text">"Loading..."</p>
-            <span id="quote-author">- Author</span>
-        </div>
-    </div>
+        <nav class="top-right-controls" aria-label="Quick actions">
+            <button id="add-link-btn" type="button" class="icon-button" title="Add bookmark" aria-label="Add bookmark">+</button>
+            <button id="bg-settings-btn" type="button" class="icon-button" title="Background settings" aria-label="Background settings">BG</button>
+            <button id="theme-btn" type="button" class="icon-button" title="Change theme" aria-label="Change theme">TH</button>
+            <button id="privacy-btn" type="button" class="icon-button" title="Privacy and security" aria-label="Privacy and security">PR</button>
+        </nav>
+    </header>
 
-    <!-- GitHub Panel (Right Side) -->
-    <div id="github-panel">
-        <div id="github-widget" class="widget">
-            <h3 class="widget-title">💻 GitHub</h3>
-            <div id="github-profile">
-                <div class="gh-profile-loading">Loading...</div>
+    <main class="page-shell">
+        <aside id="widget-panel" class="side-rail left-rail" aria-label="Bookmark tools and quote">
+            <section id="search-widget" class="widget">
+                <label for="search-input" class="eyebrow">Bookmarks</label>
+                <input type="search" id="search-input" placeholder="Filter saved links" autocomplete="off">
+                <p id="bookmark-count" class="helper-text">No bookmarks yet</p>
+            </section>
+            <section id="quote-widget" class="widget interactive-widget" tabindex="0" aria-label="Quote">
+                <p id="quote-text">Loading quote...</p>
+                <span id="quote-author"></span>
+            </section>
+        </aside>
+
+        <section class="hero-panel" aria-label="Search and clock">
+            <div class="greeting-row">
+                <p id="date"></p>
+                <button id="clock-settings-btn" type="button" class="text-button" title="Clock settings">Clock</button>
             </div>
-            <div id="github-repos"></div>
-            <input type="text" id="gh-username-input" placeholder="GitHub username">
-            <button id="gh-update-btn" class="btn-primary">Update</button>
-        </div>
-    </div>
+            <h1 id="greeting">Good day, <button id="name" type="button">Guest</button></h1>
+            <div id="clock">--:--</div>
 
-    <main>
-        <!-- Main Search Bar (Top Position) -->
-        <div id="main-search-container">
-            <div id="search-engine-icon" title="Click to switch">
-                <img src="https://www.google.com/favicon.ico" alt="Search" id="engine-icon">
-            </div>
-            <input type="text" id="main-search-input" placeholder="Search the web...">
-            <button id="search-btn" title="Search">🔍</button>
-        </div>
+            <form id="main-search-container" role="search" autocomplete="off">
+                <button type="button" id="search-engine-icon" class="engine-button" title="Switch search engine" aria-label="Switch search engine">
+                    <img src="https://www.google.com/favicon.ico" alt="" id="engine-icon">
+                </button>
+                <input type="search" id="main-search-input" placeholder="Search the web" aria-label="Search the web">
+                <button id="search-btn" type="submit" title="Search" aria-label="Search">Go</button>
+            </form>
 
-        <div class="container">
-            <h1 id="greeting">Good day, <span id="name">Guest</span></h1>
-            <div id="clock">--:--:--</div>
-            <button id="clock-settings-btn" class="clock-settings-icon" title="Clock Settings">⚙️</button>
-            <div id="date"></div>
-        </div>
-        <section id="links-container"></section>
+            <section id="links-container" aria-label="Saved bookmarks"></section>
+        </section>
+
+        <aside id="github-panel" class="side-rail right-rail" aria-label="GitHub profile">
+            <section id="github-widget" class="widget">
+                <div class="widget-heading">
+                    <h2>GitHub</h2>
+                    <span id="github-status" class="status-pill">Local opt-in</span>
+                </div>
+                <div id="github-profile">
+                    <div class="loading-state">GitHub profile will appear here.</div>
+                </div>
+                <div id="github-repos"></div>
+                <div class="inline-form">
+                    <label for="gh-username-input" class="sr-only">GitHub username</label>
+                    <input type="text" id="gh-username-input" placeholder="GitHub username" autocomplete="off">
+                    <button id="gh-update-btn" type="button" class="btn-primary">Update</button>
+                </div>
+            </section>
+        </aside>
     </main>
 
-    <!-- Panels, Modals, and Audio -->
-    <div id="toast-container"></div>
-    <div id="context-menu" class="panel hidden">
-        <button id="context-edit-btn">✏️ Edit</button>
-        <button id="context-delete-btn">❌ Delete</button>
+    <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+    <div id="context-menu" class="panel context-panel hidden" role="menu">
+        <button id="context-open-btn" type="button" role="menuitem">Open</button>
+        <button id="context-edit-btn" type="button" role="menuitem">Edit</button>
+        <button id="context-delete-btn" type="button" role="menuitem">Delete</button>
     </div>
 
-    <div id="theme-panel" class="panel hidden">
-        <h3>Themes</h3>
-        <button class="theme-option" data-theme="slate">Dark Slate</button>
-        <button class="theme-option" data-theme="light">Light</button>
-        <button class="theme-option" data-theme="ocean">Ocean</button>
-        <button class="theme-option" data-theme="cyberpunk">🌃 Cyberpunk</button>
-        <button class="theme-option" data-theme="sunset">🌅 Sunset</button>
-        <button class="theme-option" data-theme="forest">🌲 Forest</button>
-        <button class="theme-option" data-theme="aurora">✨ Aurora Wave</button>
-        <button class="theme-option" data-theme="northern">🌌 Northern Lights</button>
-        <button class="theme-option" data-theme="midnight">🌙 Midnight</button>
-        <button class="theme-option" data-theme="rosegold">🌹 Rose Gold</button>
-        <button class="theme-option" id="custom-theme-btn">Custom</button>
-
-        <!-- THIS WAS MISSING - ADDED BACK -->
-        <div id="custom-theme-panel" class="hidden">
-            <div class="color-picker-group">
-                <label for="accent-color-input">Accent Color</label>
+    <section id="theme-panel" class="panel control-panel hidden" aria-label="Theme settings">
+        <div class="panel-header">
+            <h2>Themes</h2>
+            <button type="button" class="close-panel-btn" data-close-panel="theme-panel" aria-label="Close themes">x</button>
+        </div>
+        <div id="theme-options" class="theme-grid"></div>
+        <div id="custom-theme-panel">
+            <label for="accent-color-input">Custom accent</label>
+            <div class="inline-form">
                 <input type="color" id="accent-color-input" value="#3b82f6">
-            </div>
-            <div class="form-buttons">
-                <button type="button" class="btn-primary" id="save-custom-theme-btn">Save</button>
-                <button type="button" class="btn-secondary" id="back-to-themes-btn">Back</button>
+                <button type="button" class="btn-primary" id="save-custom-theme-btn">Save Custom</button>
             </div>
         </div>
-    </div>
+    </section>
 
-    <div id="bg-settings-panel" class="panel hidden">
-        <h3>Background Settings</h3>
+    <section id="bg-settings-panel" class="panel control-panel hidden" aria-label="Background settings">
+        <div class="panel-header">
+            <h2>Background</h2>
+            <button type="button" class="close-panel-btn" data-close-panel="bg-settings-panel" aria-label="Close background settings">x</button>
+        </div>
+        <div id="background-preview" aria-hidden="true"></div>
+        <p id="background-status" class="helper-text">Gradient background active.</p>
         <div class="form-group">
-            <label>Upload Image</label>
+            <label for="bg-image-upload">Upload image</label>
             <input type="file" id="bg-image-upload" accept="image/*">
         </div>
         <div class="form-group">
-            <label>Or Image URL</label>
-            <input type="text" id="bg-image-url" placeholder="https://example.com/image.jpg">
-            <button type="button" class="btn-primary" id="apply-bg-url">Apply</button>
+            <label for="bg-image-url">Remote image URL</label>
+            <div class="inline-form">
+                <input type="url" id="bg-image-url" placeholder="https://example.com/image.jpg">
+                <button type="button" class="btn-primary" id="apply-bg-url">Apply</button>
+            </div>
         </div>
         <div class="form-group">
-            <label>Blur: <span id="blur-value">5</span>px</label>
-            <input type="range" id="bg-blur" min="0" max="20" value="5">
+            <label for="bg-gradient-select">Gradient fallback</label>
+            <select id="bg-gradient-select">
+                <option value="theme">Theme default</option>
+                <option value="dawn">Dawn mist</option>
+                <option value="orbit">Deep orbit</option>
+                <option value="meadow">Soft meadow</option>
+                <option value="ember">Warm ember</option>
+            </select>
         </div>
         <div class="form-group">
-            <label>Brightness: <span id="brightness-value">100</span>%</label>
-            <input type="range" id="bg-brightness" min="50" max="150" value="100">
+            <label for="bg-fit-mode">Image fit</label>
+            <select id="bg-fit-mode">
+                <option value="cover">Cover</option>
+                <option value="contain">Contain</option>
+                <option value="centered">Centered crop</option>
+                <option value="blur">Blur fallback</option>
+            </select>
         </div>
-        <button type="button" class="btn-secondary" id="reset-bg-btn">Reset to Gradient</button>
-        <hr style="margin: 20px 0; border: 1px solid rgba(255,255,255,0.1);">
-        <h4 style="font-size: 14px; margin-bottom: 10px;">Backup & Restore</h4>
-        <button type="button" class="btn-primary" id="export-settings-btn" style="width: 100%; margin-bottom: 8px;">⬇️
-            Export All Settings</button>
-        <input type="file" id="import-settings-input" accept=".json" style="display: none;">
-        <button type="button" class="btn-secondary" id="import-settings-btn" style="width: 100%;">⬆️ Import
-            Settings</button>
-    </div>
+        <div class="form-group">
+            <label for="bg-blur">Blur <span id="blur-value">0</span>px</label>
+            <input type="range" id="bg-blur" min="0" max="24" value="0">
+        </div>
+        <div class="form-group">
+            <label for="bg-brightness">Brightness <span id="brightness-value">100</span>%</label>
+            <input type="range" id="bg-brightness" min="55" max="145" value="100">
+        </div>
+        <button type="button" class="btn-secondary full-width" id="reset-bg-btn">Reset Background</button>
+        <div class="panel-divider"></div>
+        <h3>Backup and Restore</h3>
+        <button type="button" class="btn-primary full-width" id="export-settings-btn">Export Settings</button>
+        <input type="file" id="import-settings-input" accept=".json,application/json" hidden>
+        <button type="button" class="btn-secondary full-width" id="import-settings-btn">Import Settings</button>
+    </section>
 
-    <div id="clock-settings-panel" class="panel hidden">
-        <button class="close-btn">&times;</button>
-        <h3>Clock Settings</h3>
-        <div class="form-group">
-            <label>
-                <input type="checkbox" id="clock-24hr"> 24-hour format
-            </label>
+    <section id="clock-settings-panel" class="panel control-panel hidden" aria-label="Clock settings">
+        <div class="panel-header">
+            <h2>Clock</h2>
+            <button type="button" class="close-panel-btn" data-close-panel="clock-settings-panel" aria-label="Close clock settings">x</button>
         </div>
-        <div class="form-group">
-            <label>
-                <input type="checkbox" id="clock-seconds" checked> Show seconds
-            </label>
-        </div>
-    </div>
+        <label class="check-row"><input type="checkbox" id="clock-24hr"> 24-hour format</label>
+        <label class="check-row"><input type="checkbox" id="clock-seconds" checked> Show seconds</label>
+    </section>
 
-    <div id="add-link-modal" class="modal-overlay hidden">
+    <section id="privacy-panel" class="panel control-panel hidden" aria-label="Privacy and security">
+        <div class="panel-header">
+            <h2>Privacy</h2>
+            <button type="button" class="close-panel-btn" data-close-panel="privacy-panel" aria-label="Close privacy panel">x</button>
+        </div>
+        <div class="privacy-section">
+            <h3>Local-first by design</h3>
+            <p>Bookmarks, themes, backgrounds, and preferences stay in this browser's local storage. No analytics, cookies, account system, or cloud sync are used.</p>
+        </div>
+        <div class="privacy-section">
+            <h3>Remote access</h3>
+            <p>GitHub, quotes, search engines, favicons, and remote backgrounds are optional external requests triggered by visible features.</p>
+        </div>
+        <div class="privacy-section danger-zone">
+            <h3>Danger zone</h3>
+            <button id="clear-all-data-btn" type="button" class="btn-danger full-width">Clear All Local Data</button>
+        </div>
+    </section>
+
+    <div id="add-link-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
         <div class="modal-content panel">
-            <button class="close-btn">&times;</button>
-            <h2 id="modal-title">Add New Link</h2>
+            <div class="panel-header">
+                <h2 id="modal-title">Add Bookmark</h2>
+                <button type="button" class="close-btn" aria-label="Close bookmark form">x</button>
+            </div>
             <form id="add-link-form" novalidate>
                 <div class="form-group">
-                    <label for="link-name">Name</label>
-                    <input type="text" id="link-name-input" required autocomplete="off">
-                </div>
-                <div class="form-group">
-                    <label for="link-url">URL</label>
-                    <input type="url" id="link-url-input" placeholder="https://example.com" required autocomplete="off">
-                </div>
-                <div class="form-buttons">
-                    <button type="submit" class="btn-primary" id="modal-submit-btn">Add Link</button>
-                    <button type="button" class="btn-secondary" id="cancel-btn">Cancel</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <div id="privacy-panel" class="panel hidden">
-        <h3>Privacy & Security</h3>
-        <p>All data stored locally. No tracking.</p>
-        <button id="clear-all-data-btn" class="btn-danger">Clear All Data</button>
-    </div>
-
-    <div id="add-link-modal" class="modal-overlay hidden">
-        <div class="modal-content panel">
-            <button class="close-btn">&times;</button>
-            <h3 id="modal-title">Add New Link</h3>
-            <form id="add-link-form">
-                <div class="form-group">
                     <label for="link-name-input">Name</label>
-                    <input type="text" id="link-name-input" required>
+                    <input type="text" id="link-name-input" maxlength="100" required autocomplete="off">
                 </div>
                 <div class="form-group">
                     <label for="link-url-input">URL</label>
-                    <input type="url" id="link-url-input" required>
+                    <input type="url" id="link-url-input" placeholder="https://example.com" maxlength="2048" required autocomplete="off">
+                    <p id="link-form-help" class="helper-text">Only HTTP and HTTPS links are allowed.</p>
                 </div>
                 <div class="form-buttons">
-                    <button type="submit" id="modal-submit-btn" class="btn-primary">Add Link</button>
-                    <button type="button" id="cancel-btn" class="btn-secondary">Cancel</button>
+                    <button type="submit" class="btn-primary" id="modal-submit-btn">Add Bookmark</button>
+                    <button type="button" class="btn-secondary" id="cancel-btn">Cancel</button>
                 </div>
             </form>
         </div>

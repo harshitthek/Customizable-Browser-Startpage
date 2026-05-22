@@ -29,7 +29,7 @@ function initPrivacyControls() {
         privacyPanel.classList.toggle('hidden');
 
         // Close other panels when opening privacy panel
-        document.querySelectorAll('.panel:not(#privacy-panel)').forEach(panel => {
+        document.querySelectorAll('.panel:not(#privacy-panel):not(.modal-content)').forEach(panel => {
             panel.classList.add('hidden');
         });
     });
@@ -41,7 +41,7 @@ function initPrivacyControls() {
         clearAllBtn.addEventListener('click', () => {
             // Double confirmation to prevent accidental data loss
             const confirmed = confirm(
-                '⚠️ WARNING: This will delete ALL your data including:\\n' +
+                'WARNING: This will delete ALL your local data including:\\n' +
                 '• Bookmarks\\n' +
                 '• Settings\\n' +
                 '• Themes\\n' +
@@ -58,7 +58,7 @@ function initPrivacyControls() {
                     localStorage.clear();
 
                     // Notify user and reload
-                    alert('✅ All data has been cleared. Page will now reload.');
+                    alert('All local data has been cleared. Page will now reload.');
                     window.location.reload();
                 }
             }
