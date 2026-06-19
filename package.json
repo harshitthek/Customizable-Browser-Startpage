@@ -1,0 +1,25 @@
+{
+  "name": "customizable-browser-startpage",
+  "version": "1.0.0",
+  "description": "A beautiful, secure, and highly customizable browser homepage replacement with 13 premium themes, privacy controls, and zero dependencies.",
+  "main": "index.js",
+  "scripts": {
+    "test": "vitest run"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/harshitthek/Customizable-Browser-Startpage.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/harshitthek/Customizable-Browser-Startpage/issues"
+  },
+  "homepage": "https://github.com/harshitthek/Customizable-Browser-Startpage#readme",
+  "devDependencies": {
+    "jsdom": "^29.1.1",
+    "vitest": "^4.1.9"
+  }
+}

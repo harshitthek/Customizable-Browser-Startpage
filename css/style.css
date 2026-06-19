@@ -101,11 +101,36 @@ body {
     color: var(--text-primary);
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start;
     min-height: 100vh;
-    padding: 20px;
+    padding: 24px;
     position: relative;
     overflow-x: hidden;
+}
+
+/* Grid Layout */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: minmax(280px, 1fr) minmax(500px, 2fr) minmax(300px, 1fr);
+    gap: 24px;
+    width: 100%;
+    max-width: 1920px;
+    z-index: 1;
+    position: relative;
+}
+
+.col-left, .col-center, .col-right {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.col-center {
+    align-items: center;
+}
+
+.col-left, .col-right {
+    align-items: stretch;
 }
 
 #particle-canvas {
@@ -116,16 +141,6 @@ body {
     height: 100%;
     z-index: 0;
     pointer-events: none;
-}
-
-main {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 20px;
-    width: 100%;
-    z-index: 1;
-    position: relative;
 }
 
 .container {
@@ -162,31 +177,30 @@ main {
 
 /* --- Links Section --- */
 #links-container {
-    display: flex;
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: 25px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 16px;
     padding: 20px;
-    max-width: 900px;
+    width: 100%;
 }
 
 .link-item {
     position: relative;
-    width: 120px;
-    border-radius: 16px;
-    background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-    transition: all 0.3s ease;
+    width: 100%;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s ease;
     overflow: hidden;
+    animation: fadeIn 0.4s ease;
 }
 
 .link-item:hover {
-    transform: translateY(-6px) scale(1.02);
-    background: rgba(255, 255, 255, 0.12);
-    box-shadow: 0 12px 40px rgba(59, 130, 246, 0.3);
+    transform: translateY(-4px) scale(1.02);
+    background: rgba(255, 255, 255, 0.18);
+    box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+    border-color: var(--accent-color);
 }
 
 .link-item.dragging {
@@ -298,12 +312,9 @@ main {
 
 /* --- UI Controls --- */
 .top-right-controls {
-    position: fixed;
-    top: 20px;
-    right: 20px;
     display: flex;
-    gap: 10px;
-    z-index: 1002;
+    gap: 12px;
+    justify-content: flex-end;
 }
 
 .top-right-controls button {
@@ -324,14 +335,9 @@ main {
 
 /* --- Widgets --- */
 #widget-panel {
-    position: fixed;
-    top: 100px;
-    left: 20px;
     display: flex;
     flex-direction: column;
-    gap: 15px;
-    z-index: 10;
-    max-width: 280px;
+    gap: 16px;
 }
 
 .widget {
@@ -662,35 +668,19 @@ main {
     }
 }
 
-/* === SUBTLE BOOKMARK ENHANCEMENTS === */
-.link-item {
-    width: 115px !important;
-    border-radius: 18px !important;
-    animation: fadeIn 0.4s ease;
-}
-
 @keyframes fadeIn {
-    from {
-        opacity: 0;
-    }
-
-    to {
-        opacity: 1;
-    }
-}
-
-.link-item:hover {
-    transform: translateY(-5px) scale(1.03) !important;
-    box-shadow: 0 12px 35px rgba(59, 130, 246, 0.35) !important;
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
 .icon-container {
-    width: 75px !important;
-    height: 75px !important;
+    width: 60px !important;
+    height: 60px !important;
 }
 
 .fallback-icon {
-    font-size: 38px !important;
+    font-size: 30px !important;
+
 }
 
 .link-actions {
@@ -772,20 +762,20 @@ body.has-custom-bg #particle-canvas { display: none; }
 #github-widget .widget-title { margin-bottom: 12px; }
 #github-profile { margin-bottom: 15px; }
 .gh-profile-loading { text-align: center; padding: 20px; color: var(--text-secondary); font-size: 14px; }
-.gh-profile-card { display: flex; gap: 12px; margin-bottom: 12px; }
-.gh-avatar { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent-color); }
+.gh-profile-card { display: flex; gap: 10px; margin-bottom: 8px; }
+.gh-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent-color); }
 .gh-info { flex: 1; }
-.gh-name { font-weight: 600; font-size: 15px; color: var(--text-primary); }
-.gh-bio { font-size: 12px; color: var(--text-secondary); margin: 4px 0; line-height: 1.4; }
-.gh-stats { display: flex; gap: 15px; margin-top: 8px; font-size: 12px; }
+.gh-name { font-weight: 600; font-size: 14px; color: var(--text-primary); }
+.gh-bio { font-size: 11px; color: var(--text-secondary); margin: 2px 0; line-height: 1.3; }
+.gh-stats { display: flex; gap: 12px; margin-top: 6px; font-size: 11px; }
 .gh-stat { color: var(--text-secondary); }
 .gh-stat strong { color: var(--accent-color); font-weight: 600; }
-#github-repos { margin-bottom: 12px; max-height: 250px; overflow-y: auto; }
-.gh-repo { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 10px; margin-bottom: 8px; transition: all 0.2s; cursor: pointer; }
-.gh-repo:hover { background: rgba(255,255,255,0.1); border-color: var(--accent-color); transform: translateX(4px); }
-.gh-repo-name { font-weight: 600; font-size: 13px; color: var(--text-primary); margin-bottom: 4px; }
-.gh-repo-desc { font-size: 11px; color: var(--text-secondary); line-height: 1.3; margin-bottom: 6px; }
-.gh-repo-meta { display: flex; gap: 12px; font-size: 11px; }
+#github-repos { margin-bottom: 12px; overflow-y: auto; }
+.gh-repo { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 8px; margin-bottom: 6px; transition: all 0.2s; cursor: pointer; }
+.gh-repo:hover { background: rgba(255,255,255,0.1); border-color: var(--accent-color); transform: translateX(2px); }
+.gh-repo-name { font-weight: 600; font-size: 12px; color: var(--text-primary); margin-bottom: 2px; }
+.gh-repo-desc { font-size: 10px; color: var(--text-secondary); line-height: 1.2; margin-bottom: 4px; }
+.gh-repo-meta { display: flex; gap: 10px; font-size: 10px; }
 .gh-lang { color: var(--accent-color); }
 .gh-stars { color: var(--text-secondary); }
 #gh-username-input { width: 100%; padding: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: var(--text-primary); font-size: 13px; margin-bottom: 8px; }
@@ -793,15 +783,15 @@ body.has-custom-bg #particle-canvas { display: none; }
 
 
 /* GitHub Panel - Right Side */
-#github-panel { position: fixed; top: 100px; right: 20px; display: flex; flex-direction: column; gap: 15px; z-index: 10; max-width: 300px; }
+#github-panel { display: flex; flex-direction: column; gap: 16px; }
 
 /* Enhanced GitHub Widget Styling */
 #github-widget { background: linear-gradient(135deg, rgba(88,28,135,0.15), rgba(59,130,246,0.15)) !important; border: 1px solid rgba(139,92,246,0.3) !important; }
 #github-widget .widget-title { background: linear-gradient(90deg, #8b5cf6, #3b82f6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-size: 16px; }
-.gh-profile-card { background: rgba(139,92,246,0.08); border-radius: 12px; padding: 12px; margin-bottom: 12px; border: 1px solid rgba(139,92,246,0.2); }
-.gh-avatar { border: 3px solid #8b5cf6 !important; box-shadow: 0 0 12px rgba(139,92,246,0.4); }
-.gh-name { background: linear-gradient(90deg, #8b5cf6, #3b82f6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-size: 16px !important; }
-.gh-stats { background: rgba(59,130,246,0.1); padding: 8px; border-radius: 8px; margin-top: 10px; }
+.gh-profile-card { background: rgba(139,92,246,0.08); border-radius: 8px; padding: 10px; margin-bottom: 8px; border: 1px solid rgba(139,92,246,0.2); }
+.gh-avatar { border: 2px solid #8b5cf6 !important; box-shadow: 0 0 8px rgba(139,92,246,0.4); }
+.gh-name { background: linear-gradient(90deg, #8b5cf6, #3b82f6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-size: 14px !important; }
+.gh-stats { background: rgba(59,130,246,0.1); padding: 6px; border-radius: 6px; margin-top: 6px; }
 .gh-stat strong { color: #8b5cf6 !important; }
 .gh-repo { background: linear-gradient(135deg, rgba(139,92,246,0.1), rgba(59,130,246,0.08)) !important; border: 1px solid rgba(139,92,246,0.2) !important; }
 .gh-repo:hover { background: linear-gradient(135deg, rgba(139,92,246,0.2), rgba(59,130,246,0.15)) !important; border-color: #8b5cf6 !important; box-shadow: 0 4px 12px rgba(139,92,246,0.3); }
@@ -813,21 +803,13 @@ body.has-custom-bg #particle-canvas { display: none; }
 
 
 /* Fix GitHub scroll glitch */
-#github-repos { max-height: 300px !important; overflow-y: auto; padding-right: 8px; }
-#github-repos::-webkit-scrollbar { width: 6px; }
-#github-repos::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); border-radius: 3px; }
-#github-repos::-webkit-scrollbar-thumb { background: rgba(139,92,246,0.5); border-radius: 3px; }
+#github-repos { max-height: calc(100vh - 200px) !important; overflow-y: auto; padding-right: 8px; }
+#github-repos::-webkit-scrollbar { width: 4px; }
+#github-repos::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); border-radius: 2px; }
+#github-repos::-webkit-scrollbar-thumb { background: rgba(139,92,246,0.5); border-radius: 2px; }
 #github-repos::-webkit-scrollbar-thumb:hover { background: rgba(139,92,246,0.8); }
-.gh-repo:hover { transform: translateY(-2px) !important; }
-
-
-/* Fix GitHub Widget Overflow */
-#github-panel { top: 80px !important; max-height: calc(100vh - 100px); overflow-y: auto; padding-right: 5px; }
-#github-panel::-webkit-scrollbar { width: 5px; }
-#github-panel::-webkit-scrollbar-track { background: transparent; }
-#github-panel::-webkit-scrollbar-thumb { background: rgba(139,92,246,0.4); border-radius: 3px; }
+.gh-repo:hover { transform: translateY(-1px) !important; }
 #github-widget { max-width: 280px; }
-#github-repos { max-height: 200px !important; }
 
 /* GitHub Stats Section */
 .gh-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0; }
@@ -919,89 +901,40 @@ body.has-custom-bg #particle-canvas { display: none; }
     --panel-bg: #2d0059; --input-bg: #1a0033; --input-border: #7b2cbf; --btn-secondary-bg: #4b0082;
 }
 
-/* === MOBILE RESPONSIVE === */
-@media (max-width: 768px) {
-    /* Stack layout */
-    #widget-panel, #github-panel { position: static; width: 100%; max-width: none; padding: 15px; }
-    #github-panel { margin-top: 20px; }
-    
-    /* Larger touch targets */
-    .top-right-controls button { font-size: 24px; padding: 12px; }
-    button, .link-item { min-height: 48px; }
-    
-    /* Single column bookmarks */
-    #links-container { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)) !important; gap: 12px; }
-    
-    /* Compact clock */
-    #clock { font-size: 48px; }
-    #greeting { font-size: 20px; }
-    
-    /* Full width panels */
-    .panel { left: 10px !important; right: 10px !important; top: 100px !important; width: auto !important; transform: none !important; max-width: none !important; }
-    
-    /* Hide particles on mobile for performance */
-    #particle-canvas { display: none !important; }
-    
-    /* GitHub widget adjustments */
-    .gh-repo { padding: 12px; }
-    .gh-stats-grid { grid-template-columns: 1fr 1fr; }
-}
-
-@media (max-width: 480px) {
-    /* Extra small screens */
-    #clock { font-size: 36px; }
-    #greeting { font-size: 18px; }
-    #links-container { grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)) !important; }
-    .link-item { width: 80px !important; }
-    .favicon { width: 50px !important; height: 50px !important; }
-}
-
-
-/* Search Engine Switcher */
-#search-engine-container { display: flex; align-items: center; justify-content: center; margin: 30px 0; gap: 15px; cursor: pointer; transition: all 0.3s; }
-#search-engine-container:hover { transform: scale(1.05); }
-#search-engine-icon { width: 80px; height: 80px; border-radius: 20px; background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center; border: 2px solid rgba(255,255,255,0.2); box-shadow: 0 8px 32px rgba(0,0,0,0.2); transition: all 0.3s; }
-#search-engine-icon:hover { background: rgba(255,255,255,0.2); border-color: var(--accent-color); box-shadow: 0 12px 40px rgba(59,130,246,0.4); }
-#engine-icon { width: 48px; height: 48px; }
-#engine-name { font-size: 18px; font-weight: 500; color: var(--text-primary); }
-
-
-
-#main-search-container { display: flex; align-items: center; max-width: 600px; margin: 30px auto; background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border: 2px solid rgba(255,255,255,0.2); border-radius: 50px; padding: 8px 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.2); transition: all 0.3s; }
-#main-search-container:focus-within { border-color: var(--accent-color); box-shadow: 0 8px 32px rgba(59,130,246,0.4); }
-#search-engine-icon { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s; }
-#search-engine-icon:hover { transform: scale(1.1); }
-#engine-icon { width: 28px; height: 28px; }
-#main-search-input { flex: 1; background: transparent; border: none; outline: none; color: var(--text-primary); font-size: 16px; padding: 12px 15px; }
-#main-search-input::placeholder { color: var(--text-secondary); opacity: 0.7; }
-
-
-/* Enhanced Mobile Responsive */
-@media (max-width: 768px) {
-    /* Search bar full width */
+//* === RESPONSIVE LAYOUT === */
+@media (max-width: 1024px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+    .col-center {
+        grid-column: span 2;
+        order: -1;
+    }
+    .col-left {
+        grid-column: 1;
+    }
+    .col-right {
+        grid-column: 2;
+    }
     #main-search-container { max-width: 90%; margin: 15px auto 30px auto; }
-    #main-search-input { font-size: 16px; /* Prevents zoom on iOS */ }
+}
+
+@media (max-width: 768px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+    .col-center, .col-left, .col-right {
+        grid-column: 1;
+    }
+    .top-right-controls { justify-content: center; }
     
-    /* Compact header */
     #greeting { font-size: 24px; }
     #clock { font-size: 48px; margin: 15px 0; }
-    #date { font-size: 14px; }
     
-    /* Larger buttons for touch */
-    .top-right-controls button { width: 50px; height: 50px; font-size: 24px; }
-    
-    /* Widget layout */
-    #widget-panel { width: 100%; position: static; margin-bottom: 20px; }
-    #github-panel { width: 100%; position: static; margin-top: 20px; }
-    
-    /* Bookmark grid */
-    #links-container { grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)) !important; gap: 15px; padding: 20px 10px; }
+    #links-container { grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)) !important; gap: 15px; }
     .link-item { width: 90px !important; }
     
-    /* Panels full screen */
     .panel { left: 5px !important; right: 5px !important; top: 80px !important; max-height: 80vh; overflow-y: auto; }
-    
-    /* Hide particles */
     #particle-canvas { display: none; }
 }
 
@@ -1014,28 +947,9 @@ body.has-custom-bg #particle-canvas { display: none; }
     .favicon { width: 45px !important; height: 45px !important; }
 }
 
-
-/* Search Button */
-#search-btn { background: var(--accent-color); border: none; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 18px; transition: all 0.3s; }
-#search-btn:hover { transform: scale(1.1); background: var(--accent-color); filter: brightness(1.2); }
-
-/* Background Blur Overlay */
-
-
-
-/* Responsive width */
-@media (max-width: 768px) {
-    #main-search-container { max-width: 95% !important; }
-}
-
-
-
 /* REDESIGNED Search Bar */
 #main-search-container {
     max-width: 750px;
-    margin: 20px auto 40px auto;
-    background: rgba(255,255,255,0.08);
-    backdrop-filter: blur(12px);
     border: 2px solid rgba(255,255,255,0.15);
     border-radius: 60px;
     padding: 10px 15px;

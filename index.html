@@ -38,59 +38,61 @@
         })();
     </script>
 
-    <!-- Top Right UI Controls -->
-    <div class="top-right-controls" role="toolbar" aria-label="Main controls">
-        <button id="add-link-btn" title="Add New Link" aria-label="Add New Link">➕</button>
-        <button id="bg-settings-btn" title="Background Settings" aria-label="Background Settings">🖼️</button>
-        <button id="theme-btn" title="Change theme" aria-label="Change theme">🌈</button>
-        <button id="privacy-btn" title="Privacy & Security" aria-label="Privacy & Security">🔒</button>
-    </div>
-
     <!-- Particle Background -->
     <canvas id="particle-canvas"></canvas>
 
-    <!-- Widget Panel -->
-    <div id="widget-panel">
-        <div id="search-widget" class="widget">
-            <input type="text" id="search-input" placeholder="🔍 Search bookmarks..." />
-        </div>
-        <div id="quote-widget" class="widget">
-            <p id="quote-text">"Loading..."</p>
-            <span id="quote-author">- Author</span>
-        </div>
-    </div>
-
-    <!-- GitHub Panel (Right Side) -->
-    <div id="github-panel">
-        <div id="github-widget" class="widget">
-            <h3 class="widget-title">💻 GitHub</h3>
-            <div id="github-profile">
-                <div class="gh-profile-loading">Loading...</div>
+    <div class="dashboard-grid">
+        <!-- LEFT COLUMN: Bookmarks, Quote card -->
+        <div class="col-left">
+            <section id="links-container"></section>
+            <div id="quote-widget" class="widget">
+                <p id="quote-text">"Loading..."</p>
+                <span id="quote-author">- Author</span>
             </div>
-            <div id="github-repos"></div>
-            <input type="text" id="gh-username-input" placeholder="GitHub username">
-            <button id="gh-update-btn" class="btn-primary">Update</button>
+        </div>
+
+        <!-- CENTER COLUMN: Greeting, Clock, Search, Quick actions -->
+        <main class="col-center">
+            <div class="container">
+                <h1 id="greeting">Good day, <span id="name" tabindex="0" role="button" aria-label="Change name">Guest</span></h1>
+                <div id="clock" aria-live="polite">--:--:--</div>
+                <button id="clock-settings-btn" class="clock-settings-icon" title="Clock Settings" aria-label="Clock Settings">⚙️</button>
+                <div id="date"></div>
+            </div>
+
+            <!-- Main Search Bar -->
+            <div id="main-search-container" role="search">
+                <button id="search-engine-icon" title="Click to switch" aria-label="Switch search engine" style="background:none;border:none;padding:0;">
+                    <img src="https://www.google.com/favicon.ico" alt="Search" id="engine-icon">
+                </button>
+                <input type="text" id="main-search-input" placeholder="Search the web..." aria-label="Search query">
+                <button id="search-btn" title="Search" aria-label="Search">🔍</button>
+            </div>
+        </main>
+
+        <!-- RIGHT COLUMN: Settings actions, GitHub -->
+        <div class="col-right">
+            <!-- Top Right UI Controls -->
+            <div class="top-right-controls" role="toolbar" aria-label="Main controls">
+                <button id="add-link-btn" title="Add New Link" aria-label="Add New Link">➕</button>
+                <button id="bg-settings-btn" title="Background Settings" aria-label="Background Settings">🖼️</button>
+                <button id="theme-btn" title="Change theme" aria-label="Change theme">🌈</button>
+                <button id="privacy-btn" title="Privacy & Security" aria-label="Privacy & Security">🔒</button>
+            </div>
+
+            <div id="github-panel">
+                <div id="github-widget" class="widget">
+                    <h3 class="widget-title">💻 GitHub</h3>
+                    <div id="github-profile">
+                        <div class="gh-profile-loading">Loading...</div>
+                    </div>
+                    <div id="github-repos"></div>
+                    <input type="text" id="gh-username-input" placeholder="GitHub username">
+                    <button id="gh-update-btn" class="btn-primary">Update</button>
+                </div>
+            </div>
         </div>
     </div>
-
-    <main>
-        <!-- Main Search Bar (Top Position) -->
-        <div id="main-search-container" role="search">
-            <button id="search-engine-icon" title="Click to switch" aria-label="Switch search engine" style="background:none;border:none;padding:0;">
-                <img src="https://www.google.com/favicon.ico" alt="Search" id="engine-icon">
-            </button>
-            <input type="text" id="main-search-input" placeholder="Search the web..." aria-label="Search query">
-            <button id="search-btn" title="Search" aria-label="Search">🔍</button>
-        </div>
-
-        <div class="container">
-            <h1 id="greeting">Good day, <span id="name" tabindex="0" role="button" aria-label="Change name">Guest</span></h1>
-            <div id="clock" aria-live="polite">--:--:--</div>
-            <button id="clock-settings-btn" class="clock-settings-icon" title="Clock Settings" aria-label="Clock Settings">⚙️</button>
-            <div id="date"></div>
-        </div>
-        <section id="links-container"></section>
-    </main>
 
     <!-- Panels, Modals, and Audio -->
     <div id="toast-container" aria-live="polite"></div>
