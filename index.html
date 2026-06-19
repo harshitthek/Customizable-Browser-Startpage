@@ -24,13 +24,26 @@
 </head>
 
 <body data-theme="slate">
+    <!-- Theme Flash Prevention -->
+    <script>
+        (function() {
+            try {
+                var savedTheme = localStorage.getItem('savedTheme') || 'slate';
+                document.body.dataset.theme = savedTheme;
+                if (savedTheme === 'custom') {
+                    var savedAccent = localStorage.getItem('customAccentColor');
+                    if (savedAccent) document.body.style.setProperty('--accent-color', savedAccent);
+                }
+            } catch (e) {}
+        })();
+    </script>
 
     <!-- Top Right UI Controls -->
-    <div class="top-right-controls">
-        <button id="add-link-btn" title="Add New Link">➕</button>
-        <button id="bg-settings-btn" title="Background Settings">🖼️</button>
-        <button id="theme-btn" title="Change theme">🌈</button>
-        <button id="privacy-btn" title="Privacy & Security">🔒</button>
+    <div class="top-right-controls" role="toolbar" aria-label="Main controls">
+        <button id="add-link-btn" title="Add New Link" aria-label="Add New Link">➕</button>
+        <button id="bg-settings-btn" title="Background Settings" aria-label="Background Settings">🖼️</button>
+        <button id="theme-btn" title="Change theme" aria-label="Change theme">🌈</button>
+        <button id="privacy-btn" title="Privacy & Security" aria-label="Privacy & Security">🔒</button>
     </div>
 
     <!-- Particle Background -->
@@ -62,31 +75,31 @@
 
     <main>
         <!-- Main Search Bar (Top Position) -->
-        <div id="main-search-container">
-            <div id="search-engine-icon" title="Click to switch">
+        <div id="main-search-container" role="search">
+            <button id="search-engine-icon" title="Click to switch" aria-label="Switch search engine" style="background:none;border:none;padding:0;">
                 <img src="https://www.google.com/favicon.ico" alt="Search" id="engine-icon">
-            </div>
-            <input type="text" id="main-search-input" placeholder="Search the web...">
-            <button id="search-btn" title="Search">🔍</button>
+            </button>
+            <input type="text" id="main-search-input" placeholder="Search the web..." aria-label="Search query">
+            <button id="search-btn" title="Search" aria-label="Search">🔍</button>
         </div>
 
         <div class="container">
-            <h1 id="greeting">Good day, <span id="name">Guest</span></h1>
-            <div id="clock">--:--:--</div>
-            <button id="clock-settings-btn" class="clock-settings-icon" title="Clock Settings">⚙️</button>
+            <h1 id="greeting">Good day, <span id="name" tabindex="0" role="button" aria-label="Change name">Guest</span></h1>
+            <div id="clock" aria-live="polite">--:--:--</div>
+            <button id="clock-settings-btn" class="clock-settings-icon" title="Clock Settings" aria-label="Clock Settings">⚙️</button>
             <div id="date"></div>
         </div>
         <section id="links-container"></section>
     </main>
 
     <!-- Panels, Modals, and Audio -->
-    <div id="toast-container"></div>
-    <div id="context-menu" class="panel hidden">
-        <button id="context-edit-btn">✏️ Edit</button>
-        <button id="context-delete-btn">❌ Delete</button>
+    <div id="toast-container" aria-live="polite"></div>
+    <div id="context-menu" class="panel hidden" role="menu">
+        <button id="context-edit-btn" role="menuitem">✏️ Edit</button>
+        <button id="context-delete-btn" role="menuitem">❌ Delete</button>
     </div>
 
-    <div id="theme-panel" class="panel hidden">
+    <div id="theme-panel" class="panel hidden" role="region" aria-label="Theme settings">
         <h3>Themes</h3>
         <button class="theme-option" data-theme="slate">Dark Slate</button>
         <button class="theme-option" data-theme="light">Light</button>
@@ -113,7 +126,7 @@
         </div>
     </div>
 
-    <div id="bg-settings-panel" class="panel hidden">
+    <div id="bg-settings-panel" class="panel hidden" role="region" aria-label="Background settings">
         <h3>Background Settings</h3>
         <div class="form-group">
             <label>Upload Image</label>
@@ -142,8 +155,8 @@
             Settings</button>
     </div>
 
-    <div id="clock-settings-panel" class="panel hidden">
-        <button class="close-btn">&times;</button>
+    <div id="clock-settings-panel" class="panel hidden" role="region" aria-label="Clock settings">
+        <button class="close-btn" aria-label="Close panel">&times;</button>
         <h3>Clock Settings</h3>
         <div class="form-group">
             <label>
@@ -157,9 +170,9 @@
         </div>
     </div>
 
-    <div id="add-link-modal" class="modal-overlay hidden">
+    <div id="add-link-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
         <div class="modal-content panel">
-            <button class="close-btn">&times;</button>
+            <button class="close-btn" aria-label="Close modal">&times;</button>
             <h2 id="modal-title">Add New Link</h2>
             <form id="add-link-form" novalidate>
                 <div class="form-group">
@@ -178,32 +191,12 @@
         </div>
     </div>
 
-    <div id="privacy-panel" class="panel hidden">
+    <div id="privacy-panel" class="panel hidden" role="region" aria-label="Privacy settings">
         <h3>Privacy & Security</h3>
         <p>All data stored locally. No tracking.</p>
         <button id="clear-all-data-btn" class="btn-danger">Clear All Data</button>
     </div>
 
-    <div id="add-link-modal" class="modal-overlay hidden">
-        <div class="modal-content panel">
-            <button class="close-btn">&times;</button>
-            <h3 id="modal-title">Add New Link</h3>
-            <form id="add-link-form">
-                <div class="form-group">
-                    <label for="link-name-input">Name</label>
-                    <input type="text" id="link-name-input" required>
-                </div>
-                <div class="form-group">
-                    <label for="link-url-input">URL</label>
-                    <input type="url" id="link-url-input" required>
-                </div>
-                <div class="form-buttons">
-                    <button type="submit" id="modal-submit-btn" class="btn-primary">Add Link</button>
-                    <button type="button" id="cancel-btn" class="btn-secondary">Cancel</button>
-                </div>
-            </form>
-        </div>
-    </div>
 </body>
 
 </html>
