@@ -36,8 +36,35 @@ let editingLinkIndex = null;
 let contextMenuLinkIndex = null;
 let flashlightOn = false;
 let isMuted = localStorage.getItem('isMuted') === 'true';
+let lastFocusedElement = null;
+let interactiveEffectsInitialized = false;
 
 // --- Functions ---
+function safeSetItem(key, value) {
+    try {
+        localStorage.setItem(key, value);
+    } catch (e) {
+        if (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
+            alert('Storage quota exceeded. Cannot save settings or background image. Please use a smaller image or a URL.');
+            console.error('Storage quota exceeded', e);
+        } else {
+            console.error('Error saving to localStorage', e);
+        }
+    }
+}
+
+function showToast(message) {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.innerHTML = `<span class="toast-message">${message}</span>`;
+    container.appendChild(toast);
+    setTimeout(() => {
+        toast.classList.add('toast-out');
+        toast.addEventListener('animationend', () => toast.remove());
+    }, 3000);
+}
 function setDate() {
     const now = new Date();
     const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
@@ -159,10 +186,9 @@ function renderLinks() {
         linkItem.appendChild(linkActions);
         linksContainer.appendChild(linkItem);
     });
-    initializeInteractiveEffects(); // Re-initialize effects after rendering
 }
 
-function saveLinks() { localStorage.setItem('savedLinks', JSON.stringify(links)); }
+function saveLinks() { safeSetItem('savedLinks', JSON.stringify(links)); }
 
 function deleteLink(index, linkElement) {
     if (confirm("Are you sure you want to delete this link?")) {
@@ -188,7 +214,7 @@ function applyTheme(theme) {
         document.body.style.removeProperty('--accent-color');
     }
     document.body.dataset.theme = theme;
-    localStorage.setItem('savedTheme', theme);
+    safeSetItem('savedTheme', theme);
     // Apply custom accent color if custom theme is active
     if (theme === 'custom') {
         const savedAccent = localStorage.getItem('customAccentColor');
@@ -202,6 +228,7 @@ function loadTheme() {
 }
 
 function openEditModal(index) {
+    lastFocusedElement = document.activeElement;
     editingLinkIndex = index;
     const link = links[index];
     if (modalTitle) modalTitle.textContent = 'Edit Link';
@@ -218,10 +245,16 @@ function closeModal() {
     editingLinkIndex = null;
     if (modalTitle) modalTitle.textContent = 'Add New Link';
     if (modalSubmitBtn) modalSubmitBtn.textContent = 'Add Link';
+    if (lastFocusedElement) {
+        lastFocusedElement.focus();
+        lastFocusedElement = null;
+    }
 }
 
 // REPLACE your existing initializeInteractiveEffects function with this one:
 function initializeInteractiveEffects() {
+    if (interactiveEffectsInitialized) return;
+    interactiveEffectsInitialized = true;
     console.log("Initializing interactive effects..."); // Check if function runs
 
     // Hide context menu on any click outside
@@ -293,10 +326,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (nameElement) nameElement.addEventListener('click', () => {
         const currentName = localStorage.getItem('username') || "Guest";
         const newName = prompt("Enter a new name:", currentName === "Guest" ? "" : currentName);
-        if (newName && newName.trim() !== "") { localStorage.setItem('username', newName.trim()); nameElement.textContent = newName.trim(); }
+        if (newName && newName.trim() !== "") { safeSetItem('username', newName.trim()); nameElement.textContent = newName.trim(); }
     });
 
     if (addLinkBtn) addLinkBtn.addEventListener('click', () => {
+        lastFocusedElement = document.activeElement;
         editingLinkIndex = null;
         if (modalTitle) modalTitle.textContent = 'Add New Link';
         if (modalSubmitBtn) modalSubmitBtn.textContent = 'Add Link';
@@ -357,7 +391,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (target.id === 'save-custom-theme-btn') {
             if (accentColorInput) {
                 const newColor = accentColorInput.value;
-                localStorage.setItem('customAccentColor', newColor);
+                safeSetItem('customAccentColor', newColor);
                 applyTheme('custom'); // Apply custom theme which also applies accent color
             }
         } else if (target.id === 'back-to-themes-btn') { // CORRECTED BACK BUTTON LOGIC
@@ -395,7 +429,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     if (muteBtn) muteBtn.addEventListener('click', () => {
         isMuted = !isMuted;
-        localStorage.setItem('isMuted', isMuted);
+        safeSetItem('isMuted', isMuted);
         updateMuteButton();
     });
 
@@ -411,7 +445,8 @@ document.addEventListener('DOMContentLoaded', () => {
     startClock();
     handleName();
     loadTheme();
-    loadLinks(); // This will call initializeInteractiveEffects internally
+    loadLinks(); 
+    initializeInteractiveEffects();
     initKeyboardShortcuts();
     initClockSettings();
     initExportImport();
@@ -642,7 +677,7 @@ async function initGitHub() {
                 </div>
             `).join('');
 
-            localStorage.setItem('githubUsername', username);
+            safeSetItem('githubUsername', username);
         } catch (error) {
             const is403 = error.message.includes('403') || error.message.includes('Forbidden');
             const errorMsg = is403
@@ -717,7 +752,7 @@ function initBackgroundSettings() {
         const reader = new FileReader();
         reader.onload = (event) => {
             overlay.style.backgroundImage = `url(${event.target.result})`;
-            localStorage.setItem('customBg', event.target.result);
+            safeSetItem('customBg', event.target.result);
             document.body.classList.add('has-custom-bg');
             applyFilters();
         };
@@ -728,20 +763,20 @@ function initBackgroundSettings() {
         const url = bgUrlInput.value.trim();
         if (!url) return;
         overlay.style.backgroundImage = `url(${url})`;
-        localStorage.setItem('customBg', url);
+        safeSetItem('customBg', url);
         document.body.classList.add('has-custom-bg');
         applyFilters();
     });
 
     blurSlider.addEventListener('input', (e) => {
         blurValue.textContent = e.target.value;
-        localStorage.setItem('bgBlur', e.target.value);
+        safeSetItem('bgBlur', e.target.value);
         applyFilters();
     });
 
     brightnessSlider.addEventListener('input', (e) => {
         brightnessValue.textContent = e.target.value;
-        localStorage.setItem('bgBrightness', e.target.value);
+        safeSetItem('bgBrightness', e.target.value);
         applyFilters();
     });
 
@@ -801,12 +836,12 @@ function initClockSettings() {
 
     // Save settings
     clock24hr.addEventListener('change', () => {
-        localStorage.setItem('clock24hr', clock24hr.checked);
+        safeSetItem('clock24hr', clock24hr.checked);
         updateClock();
     });
 
     clockSeconds.addEventListener('change', () => {
-        localStorage.setItem('clockSeconds', clockSeconds.checked);
+        safeSetItem('clockSeconds', clockSeconds.checked);
         updateClock();
     });
 }
@@ -863,7 +898,7 @@ function initExportImport() {
                 // Restore settings
                 if (data.settings) {
                     Object.keys(data.settings).forEach(key => {
-                        localStorage.setItem(key, data.settings[key]);
+                        safeSetItem(key, data.settings[key]);
                     });
                 }
 
@@ -874,8 +909,40 @@ function initExportImport() {
                     renderLinks();
                 }
 
-                showToast(' Settings imported! Refreshing...');
-                setTimeout(() => location.reload(), 1500);
+                showToast('✅ Settings imported! Applying...');
+                
+                // Apply changes in place
+                loadTheme();
+                handleName();
+                updateClock();
+                if (typeof initGitHub === 'function') initGitHub();
+                
+                // Trigger background UI updates if panel is open
+                const bgSettingsBtn = document.getElementById('bg-settings-btn');
+                if (bgSettingsBtn) {
+                    const savedBg = localStorage.getItem('customBg');
+                    let overlay = document.getElementById('custom-bg-overlay');
+                    if (overlay) {
+                        if (savedBg) {
+                            overlay.style.backgroundImage = `url(${savedBg})`;
+                            document.body.classList.add('has-custom-bg');
+                        } else {
+                            overlay.style.backgroundImage = '';
+                            document.body.classList.remove('has-custom-bg');
+                        }
+                        const savedBlur = localStorage.getItem('bgBlur') || '5';
+                        const savedBrightness = localStorage.getItem('bgBrightness') || '100';
+                        overlay.style.filter = `blur(${savedBlur}px) brightness(${savedBrightness}%)`;
+                    }
+                }
+                
+                if (document.getElementById('clock-24hr')) {
+                    document.getElementById('clock-24hr').checked = localStorage.getItem('clock24hr') === 'true';
+                }
+                if (document.getElementById('clock-seconds')) {
+                    document.getElementById('clock-seconds').checked = localStorage.getItem('clockSeconds') !== 'false';
+                }
+
             } catch (error) {
                 showToast(' Invalid backup file');
             }
@@ -905,7 +972,7 @@ function initSearchEngineSwitcher() {
         const engine = engines[currentIndex];
         icon.src = engine.icon;
         icon.alt = engine.name;
-        localStorage.setItem('searchEngineIndex', currentIndex);
+        safeSetItem('searchEngineIndex', currentIndex);
     }
 
     // Click on icon container to switch engines
