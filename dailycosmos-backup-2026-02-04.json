@@ -1,0 +1,20 @@
+{
+  "version": "1.0",
+  "exportDate": "2026-02-04T20:18:19.823Z",
+  "settings": {
+    "githubUsername": "harshitthek",
+    "clock24hr": "false",
+    "customAccentColor": "#7e3535",
+    "isMuted": "false",
+    "clockSeconds": "false",
+    "savedTheme": "slate",
+    "username": "Shubham",
+    "savedLinks": "[{\"name\":\"GooGle\",\"url\":\"https://google.com\"}]"
+  },
+  "links": [
+    {
+      "name": "GooGle",
+      "url": "https://google.com"
+    }
+  ]
+}

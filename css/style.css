@@ -77,6 +77,22 @@ body {
     overflow-x: hidden;
 }
 
+body[data-bg-gradient="deep orbit"] {
+    background: radial-gradient(circle at 20% 20%, #334155, transparent 30%), linear-gradient(135deg, #020617, #1e1b4b 56%, #111827) !important;
+}
+
+body[data-bg-gradient="dawn mist"] {
+    background: linear-gradient(135deg, #e0f2fe, #fef3c7 44%, #fecdd3) !important;
+}
+
+body[data-bg-gradient="meadow"] {
+    background: linear-gradient(135deg, #052e16, #166534 54%, #bef264) !important;
+}
+
+body[data-bg-gradient="ember"] {
+    background: linear-gradient(135deg, #431407, #9a3412 52%, #f97316) !important;
+}
+
 #particle-canvas {
     position: fixed;
     top: 0;
