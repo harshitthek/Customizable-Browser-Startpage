@@ -65,6 +65,29 @@ function showToast(message) {
         toast.addEventListener('animationend', () => toast.remove());
     }, 3000);
 }
+
+function trapFocus(element, e) {
+    const focusableEls = element.querySelectorAll('a[href]:not([disabled]), button:not([disabled]), textarea:not([disabled]), input[type="text"]:not([disabled]), input[type="url"]:not([disabled]), input[type="radio"]:not([disabled]), input[type="checkbox"]:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])');
+    if (focusableEls.length === 0) return;
+    
+    const firstFocusableEl = focusableEls[0];  
+    const lastFocusableEl = focusableEls[focusableEls.length - 1];
+
+    if (e.key === 'Tab') {
+        if (e.shiftKey) { // Shift + Tab
+            if (document.activeElement === firstFocusableEl || document.activeElement === element) {
+                lastFocusableEl.focus();
+                e.preventDefault();
+            }
+        } else { // Tab
+            if (document.activeElement === lastFocusableEl) {
+                firstFocusableEl.focus();
+                e.preventDefault();
+            }
+        }
+    }
+}
+
 function setDate() {
     const now = new Date();
     const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
@@ -295,13 +318,17 @@ function initializeInteractiveEffects() {
                 contextMenuLinkIndex = parseInt(linkItem.dataset.index, 10);
                 const { clientX: mouseX, clientY: mouseY } = e;
                 if (contextMenu) {
-                    const menuWidth = contextMenu.offsetWidth;
-                    const menuHeight = contextMenu.offsetHeight;
+                    const menuWidth = contextMenu.offsetWidth || 150;
+                    const menuHeight = contextMenu.offsetHeight || 100;
                     const posX = mouseX + menuWidth > window.innerWidth ? window.innerWidth - menuWidth - 5 : mouseX;
                     const posY = mouseY + menuHeight > window.innerHeight ? window.innerHeight - menuHeight - 5 : mouseY;
                     contextMenu.style.top = `${posY}px`;
                     contextMenu.style.left = `${posX}px`;
                     contextMenu.classList.remove('hidden');
+                    contextMenu.setAttribute('aria-expanded', 'true');
+                    // Focus first item
+                    const firstItem = contextMenu.querySelector('[role="menuitem"]');
+                    if (firstItem) setTimeout(() => firstItem.focus(), 10);
                 }
             }
         });
@@ -457,13 +484,62 @@ document.addEventListener('DOMContentLoaded', () => {
 // === KEYBOARD SHORTCUTS ===
 function initKeyboardShortcuts() {
     document.addEventListener('keydown', (e) => {
+        // 1. Context Menu Keyboard Navigation
+        const contextMenu = document.getElementById('context-menu');
+        if (contextMenu && !contextMenu.classList.contains('hidden')) {
+            const items = Array.from(contextMenu.querySelectorAll('[role="menuitem"]'));
+            if (items.length > 0) {
+                const index = items.indexOf(document.activeElement);
+                if (['ArrowDown', 'ArrowUp', 'Home', 'End', 'Enter', ' ', 'Escape', 'Tab'].includes(e.key)) {
+                    e.preventDefault();
+                    switch(e.key) {
+                        case 'ArrowDown':
+                            if (index < items.length - 1) items[index + 1].focus();
+                            else items[0].focus();
+                            break;
+                        case 'ArrowUp':
+                            if (index > 0) items[index - 1].focus();
+                            else items[items.length - 1].focus();
+                            break;
+                        case 'Home':
+                            items[0].focus();
+                            break;
+                        case 'End':
+                            items[items.length - 1].focus();
+                            break;
+                        case 'Enter':
+                        case ' ':
+                            if (index !== -1) items[index].click();
+                            break;
+                        case 'Escape':
+                        case 'Tab':
+                            contextMenu.classList.add('hidden');
+                            contextMenu.setAttribute('aria-expanded', 'false');
+                            const linkItem = document.querySelector(`.link-item[data-index="${contextMenuLinkIndex}"] .link-anchor`);
+                            if (linkItem) linkItem.focus();
+                            break;
+                    }
+                    return; // Stop processing other shortcuts
+                }
+            }
+        }
+
+        // 2. Modal Focus Trapping
+        const openModal = document.querySelector('.modal-overlay:not(.hidden) .modal-content');
+        if (openModal) {
+            if (e.key === 'Tab') {
+                trapFocus(openModal, e);
+                return; // Prevent default tab flow if trapped
+            }
+        }
+
         // Don't trigger shortcuts when typing in inputs
         if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
             // ESC to blur input
             if (e.key === 'Escape') {
                 e.target.blur();
                 document.querySelectorAll('.panel').forEach(p => p.classList.add('hidden'));
-                document.querySelectorAll('.modal-overlay').forEach(m => m.classList.add('hidden'));
+                if (typeof closeModal === 'function') closeModal();
             }
             return;
         }
@@ -474,7 +550,7 @@ function initKeyboardShortcuts() {
 
         switch (e.key) {
             case '/':
-                document.getElementById('search-input')?.focus();
+                document.getElementById('main-search-input')?.focus();
                 break;
             case 'n':
             case 'N':
@@ -490,7 +566,7 @@ function initKeyboardShortcuts() {
                 break;
             case 'Escape':
                 document.querySelectorAll('.panel').forEach(p => p.classList.add('hidden'));
-                document.querySelectorAll('.modal-overlay').forEach(m => m.classList.add('hidden'));
+                if (typeof closeModal === 'function') closeModal();
                 break;
         }
     });
