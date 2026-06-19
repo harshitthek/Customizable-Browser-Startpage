@@ -156,7 +156,7 @@ function updateMuteButton() {
 
 function renderLinks() {
     if (!linksContainer) return;
-    linksContainer.innerHTML = '';
+    linksContainer.replaceChildren();
     links.forEach((link, index) => {
         const linkItem = document.createElement('div');
         linkItem.className = 'link-item';
@@ -175,7 +175,7 @@ function renderLinks() {
         try { const hostname = new URL(link.url).hostname; faviconImg.src = `https://www.google.com/s2/favicons?domain=${hostname}&sz=64`; } catch { faviconImg.src = ''; }
         faviconImg.alt = link.name + ' favicon';
         faviconImg.onerror = () => {
-            iconContainer.innerHTML = '';
+            iconContainer.replaceChildren();
             const fallback = document.createElement('span');
             fallback.className = 'fallback-icon';
             fallback.textContent = (link.name || '?').charAt(0).toUpperCase();
@@ -195,12 +195,12 @@ function renderLinks() {
         const editBtn = document.createElement('button');
         editBtn.className = 'edit-btn';
         editBtn.title = 'Edit link';
-        editBtn.innerHTML = '✏️';
+        editBtn.textContent = '✏️';
         editBtn.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); openEditModal(index); });
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'delete-btn';
         deleteBtn.title = 'Delete link';
-        deleteBtn.innerHTML = 'x';
+        deleteBtn.textContent = 'x';
         deleteBtn.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); deleteLink(index, linkItem); });
         linkActions.appendChild(editBtn);
         linkActions.appendChild(deleteBtn);
@@ -811,6 +811,8 @@ function initBackgroundSettings() {
     const resetBtn = document.getElementById('reset-bg-btn');
     const blurValue = document.getElementById('blur-value');
     const brightnessValue = document.getElementById('brightness-value');
+    const fitModeSelect = document.getElementById('bg-fit-mode');
+    const gradientSelect = document.getElementById('bg-gradient-select');
 
     if (!bgSettingsBtn) return;
 
@@ -829,16 +831,26 @@ function initBackgroundSettings() {
     const savedBg = localStorage.getItem('customBg');
     const savedBlur = localStorage.getItem('bgBlur') || '5';
     const savedBrightness = localStorage.getItem('bgBrightness') || '100';
+    const savedFitMode = localStorage.getItem('bgFitMode') || 'cover';
+    const savedGradient = localStorage.getItem('bgGradientFallback') || 'none';
 
     if (savedBg) {
         overlay.style.backgroundImage = `url(${savedBg})`;
         document.body.classList.add('has-custom-bg');
     }
+    
     blurSlider.value = savedBlur;
     brightnessSlider.value = savedBrightness;
     blurValue.textContent = savedBlur;
     brightnessValue.textContent = savedBrightness;
+    
+    if (fitModeSelect) fitModeSelect.value = savedFitMode;
+    if (gradientSelect) gradientSelect.value = savedGradient;
+    
+    document.body.dataset.bgGradient = savedGradient;
+
     applyFilters();
+    applyFitMode();
 
     bgUpload.addEventListener('change', (e) => {
         const file = e.target.files[0];
@@ -874,21 +886,55 @@ function initBackgroundSettings() {
         applyFilters();
     });
 
+    if (fitModeSelect) {
+        fitModeSelect.addEventListener('change', (e) => {
+            safeSetItem('bgFitMode', e.target.value);
+            applyFitMode();
+        });
+    }
+
+    if (gradientSelect) {
+        gradientSelect.addEventListener('change', (e) => {
+            safeSetItem('bgGradientFallback', e.target.value);
+            document.body.dataset.bgGradient = e.target.value;
+        });
+    }
+
     resetBtn.addEventListener('click', () => {
         overlay.style.backgroundImage = '';
         overlay.style.filter = '';
         document.body.classList.remove('has-custom-bg');
         localStorage.removeItem('customBg');
-        localStorage.removeItem('bgBlur');
-        localStorage.removeItem('bgBrightness');
+        // Do NOT remove fit mode and gradient preferences per user feedback
+        
         blurSlider.value = '5';
         brightnessSlider.value = '100';
         blurValue.textContent = '5';
         brightnessValue.textContent = '100';
+        safeSetItem('bgBlur', '5');
+        safeSetItem('bgBrightness', '100');
+        applyFilters();
     });
 
     function applyFilters() {
         overlay.style.filter = `blur(${blurSlider.value}px) brightness(${brightnessSlider.value}%)`;
+    }
+
+    function applyFitMode() {
+        const mode = localStorage.getItem('bgFitMode') || 'cover';
+        if (mode === 'cover') {
+            overlay.style.backgroundSize = 'cover';
+            overlay.style.backgroundPosition = 'center';
+        } else if (mode === 'contain') {
+            overlay.style.backgroundSize = 'contain';
+            overlay.style.backgroundPosition = 'center';
+        } else if (mode === 'fill') {
+            overlay.style.backgroundSize = '100% 100%';
+            overlay.style.backgroundPosition = 'center';
+        } else if (mode === 'center crop') {
+            overlay.style.backgroundSize = 'auto';
+            overlay.style.backgroundPosition = 'center';
+        }
     }
 }
 
