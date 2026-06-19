@@ -25,74 +25,64 @@
 
 <body data-theme="slate">
     <!-- Theme Flash Prevention -->
-    <script>
-        (function() {
-            try {
-                var savedTheme = localStorage.getItem('savedTheme') || 'slate';
-                document.body.dataset.theme = savedTheme;
-                if (savedTheme === 'custom') {
-                    var savedAccent = localStorage.getItem('customAccentColor');
-                    if (savedAccent) document.body.style.setProperty('--accent-color', savedAccent);
-                }
-            } catch (e) {}
-        })();
-    </script>
+    <script src="js/theme-init.js"></script>
+
+    <!-- Top Right UI Controls -->
+    <div class="top-right-controls" role="toolbar" aria-label="Main controls">
+        <button id="add-link-btn" title="Add New Link" aria-label="Add New Link">➕</button>
+        <button id="bg-settings-btn" title="Background Settings" aria-label="Background Settings">🖼️</button>
+        <button id="theme-btn" title="Change theme" aria-label="Change theme">🌈</button>
+        <button id="privacy-btn" title="Privacy & Security" aria-label="Privacy & Security">🔒</button>
+    </div>
 
     <!-- Particle Background -->
     <canvas id="particle-canvas"></canvas>
 
-    <div class="dashboard-grid">
-        <!-- LEFT COLUMN: Bookmarks, Quote card -->
-        <div class="col-left">
-            <section id="links-container"></section>
-            <div id="quote-widget" class="widget">
-                <p id="quote-text">"Loading..."</p>
-                <span id="quote-author">- Author</span>
-            </div>
+    <!-- Widget Panel -->
+    <div id="widget-panel">
+        <div id="search-widget" class="widget">
+            <label for="search-input" class="visually-hidden" style="display:none;">Search bookmarks</label>
+            <input type="text" id="search-input" aria-label="Search bookmarks" placeholder="🔍 Search bookmarks..." />
         </div>
-
-        <!-- CENTER COLUMN: Greeting, Clock, Search, Quick actions -->
-        <main class="col-center">
-            <div class="container">
-                <h1 id="greeting">Good day, <span id="name" tabindex="0" role="button" aria-label="Change name">Guest</span></h1>
-                <div id="clock" aria-live="polite">--:--:--</div>
-                <button id="clock-settings-btn" class="clock-settings-icon" title="Clock Settings" aria-label="Clock Settings">⚙️</button>
-                <div id="date"></div>
-            </div>
-
-            <!-- Main Search Bar -->
-            <div id="main-search-container" role="search">
-                <button id="search-engine-icon" title="Click to switch" aria-label="Switch search engine" style="background:none;border:none;padding:0;">
-                    <img src="https://www.google.com/favicon.ico" alt="Search" id="engine-icon">
-                </button>
-                <input type="text" id="main-search-input" placeholder="Search the web..." aria-label="Search query">
-                <button id="search-btn" title="Search" aria-label="Search">🔍</button>
-            </div>
-        </main>
-
-        <!-- RIGHT COLUMN: Settings actions, GitHub -->
-        <div class="col-right">
-            <!-- Top Right UI Controls -->
-            <div class="top-right-controls" role="toolbar" aria-label="Main controls">
-                <button id="add-link-btn" title="Add New Link" aria-label="Add New Link">➕</button>
-                <button id="bg-settings-btn" title="Background Settings" aria-label="Background Settings">🖼️</button>
-                <button id="theme-btn" title="Change theme" aria-label="Change theme">🌈</button>
-                <button id="privacy-btn" title="Privacy & Security" aria-label="Privacy & Security">🔒</button>
-            </div>
-
-            <div id="github-panel">
-                <div id="github-widget" class="widget">
-                    <h3 class="widget-title">💻 GitHub</h3>
-                    <div id="github-profile">
-                        <div class="gh-profile-loading">Loading...</div>
-                    </div>
-                    <div id="github-repos"></div>
-                    <input type="text" id="gh-username-input" placeholder="GitHub username">
-                    <button id="gh-update-btn" class="btn-primary">Update</button>
-                </div>
-            </div>
+        <div id="quote-widget" class="widget">
+            <p id="quote-text">"Loading..."</p>
+            <span id="quote-author">- Author</span>
         </div>
     </div>
+
+    <!-- GitHub Panel (Right Side) -->
+    <div id="github-panel">
+        <div id="github-widget" class="widget">
+            <h3 class="widget-title">💻 GitHub</h3>
+            <div id="github-profile">
+                <div class="gh-profile-loading">Loading...</div>
+            </div>
+            <div id="github-repos"></div>
+            <label for="gh-username-input" class="visually-hidden" style="display:none;">GitHub username</label>
+            <input type="text" id="gh-username-input" aria-label="GitHub username" placeholder="GitHub username">
+            <button id="gh-update-btn" class="btn-primary">Update</button>
+        </div>
+    </div>
+
+    <main>
+        <!-- Main Search Bar (Top Position) -->
+        <div id="main-search-container" role="search">
+            <button id="search-engine-icon" title="Click to switch" aria-label="Switch search engine" style="background:none;border:none;padding:0;">
+                <img src="https://www.google.com/favicon.ico" alt="Search" id="engine-icon">
+            </button>
+            <label for="main-search-input" class="visually-hidden" style="display:none;">Search query</label>
+            <input type="text" id="main-search-input" placeholder="Search the web..." aria-label="Search query">
+            <button id="search-btn" title="Search" aria-label="Search">🔍</button>
+        </div>
+
+        <div class="container">
+            <h1 id="greeting">Good day, <span id="name" tabindex="0" role="button" aria-label="Change name">Guest</span></h1>
+            <div id="clock" aria-live="polite">--:--:--</div>
+            <button id="clock-settings-btn" class="clock-settings-icon" title="Clock Settings" aria-label="Clock Settings">⚙️</button>
+            <div id="date"></div>
+        </div>
+        <section id="links-container"></section>
+    </main>
 
     <!-- Panels, Modals, and Audio -->
     <div id="toast-container" aria-live="polite"></div>
@@ -131,20 +121,20 @@
     <div id="bg-settings-panel" class="panel hidden" role="region" aria-label="Background settings">
         <h3>Background Settings</h3>
         <div class="form-group">
-            <label>Upload Image</label>
+            <label for="bg-image-upload">Upload Image</label>
             <input type="file" id="bg-image-upload" accept="image/*">
         </div>
         <div class="form-group">
-            <label>Or Image URL</label>
+            <label for="bg-image-url">Or Image URL</label>
             <input type="text" id="bg-image-url" placeholder="https://example.com/image.jpg">
             <button type="button" class="btn-primary" id="apply-bg-url">Apply</button>
         </div>
         <div class="form-group">
-            <label>Blur: <span id="blur-value">5</span>px</label>
+            <label for="bg-blur">Blur: <span id="blur-value">5</span>px</label>
             <input type="range" id="bg-blur" min="0" max="20" value="5">
         </div>
         <div class="form-group">
-            <label>Brightness: <span id="brightness-value">100</span>%</label>
+            <label for="bg-brightness">Brightness: <span id="brightness-value">100</span>%</label>
             <input type="range" id="bg-brightness" min="50" max="150" value="100">
         </div>
         <button type="button" class="btn-secondary" id="reset-bg-btn">Reset to Gradient</button>
@@ -152,6 +142,7 @@
         <h4 style="font-size: 14px; margin-bottom: 10px;">Backup & Restore</h4>
         <button type="button" class="btn-primary" id="export-settings-btn" style="width: 100%; margin-bottom: 8px;">⬇️
             Export All Settings</button>
+        <label for="import-settings-input" class="visually-hidden" style="display:none;">Import settings file</label>
         <input type="file" id="import-settings-input" accept=".json" style="display: none;">
         <button type="button" class="btn-secondary" id="import-settings-btn" style="width: 100%;">⬆️ Import
             Settings</button>
@@ -161,12 +152,12 @@
         <button class="close-btn" aria-label="Close panel">&times;</button>
         <h3>Clock Settings</h3>
         <div class="form-group">
-            <label>
+            <label for="clock-24hr">
                 <input type="checkbox" id="clock-24hr"> 24-hour format
             </label>
         </div>
         <div class="form-group">
-            <label>
+            <label for="clock-seconds">
                 <input type="checkbox" id="clock-seconds" checked> Show seconds
             </label>
         </div>
@@ -178,13 +169,13 @@
             <h2 id="modal-title">Add New Link</h2>
             <form id="add-link-form" novalidate>
                 <div class="form-group">
-                    <label for="link-name">Name</label>
-                    <input type="text" id="link-name-input" required autocomplete="off">
-                </div>
-                <div class="form-group">
-                    <label for="link-url">URL</label>
-                    <input type="url" id="link-url-input" placeholder="https://example.com" required autocomplete="off">
-                </div>
+            <label for="link-name-input">Name</label>
+            <input type="text" id="link-name-input" required autocomplete="off">
+        </div>
+        <div class="form-group">
+            <label for="link-url-input">URL</label>
+            <input type="url" id="link-url-input" placeholder="https://example.com" required autocomplete="off">
+        </div>
                 <div class="form-buttons">
                     <button type="submit" class="btn-primary" id="modal-submit-btn">Add Link</button>
                     <button type="button" class="btn-secondary" id="cancel-btn">Cancel</button>

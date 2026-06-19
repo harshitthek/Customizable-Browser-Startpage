@@ -692,7 +692,7 @@ async function initGitHub() {
 
             const [profileRes, reposRes] = await Promise.all([
                 fetch(`https://api.github.com/users/${username}`),
-                fetch(`https://api.github.com/users/${username}/repos?sort=updated&per_page=5`)
+                fetch(`https://api.github.com/users/${username}/repos?sort=updated&per_page=100`)
             ]);
 
             if (profileRes.status === 403) {
@@ -702,10 +702,13 @@ async function initGitHub() {
                 throw new Error('User not found');
             }
             const profile = await profileRes.json();
-            const repos = await reposRes.json();
+            const allRepos = await reposRes.json();
 
-            // Find top starred repo
-            const topRepo = repos.reduce((max, repo) => repo.stargazers_count > (max.stargazers_count || 0) ? repo : max, {});
+            // Find top starred repo overall
+            const topRepo = allRepos.reduce((max, repo) => repo.stargazers_count > (max.stargazers_count || 0) ? repo : max, {});
+            
+            // Get most recently updated 5 repos
+            const repos = allRepos.slice(0, 5);
 
             profileDiv.innerHTML = `
                 <div class="gh-profile-card">
@@ -734,7 +737,7 @@ async function initGitHub() {
                     </div>
                 </div>
                 ${topRepo.name ? `
-                    <div class="gh-top-repo" onclick="window.open('${topRepo.html_url}', '_blank')">
+                    <div class="gh-top-repo gh-repo-link" data-url="${topRepo.html_url}">
                         <div class="gh-top-repo-title">🏆 Most Starred</div>
                         <div class="gh-top-repo-name">${topRepo.name}</div>
                         <div class="gh-top-repo-stars">⭐ ${topRepo.stargazers_count} stars</div>
@@ -743,7 +746,7 @@ async function initGitHub() {
             `;
 
             reposDiv.innerHTML = repos.map(repo => `
-                <div class="gh-repo" onclick="window.open('${repo.html_url}', '_blank')">
+                <div class="gh-repo gh-repo-link" data-url="${repo.html_url}">
                     <div class="gh-repo-name">${repo.name}</div>
                     <div class="gh-repo-desc">${repo.description || 'No description'}</div>
                     <div class="gh-repo-meta">
@@ -752,6 +755,21 @@ async function initGitHub() {
                     </div>
                 </div>
             `).join('');
+
+            // Delegated event listener for CSP compliance
+            const clickHandler = (e) => {
+                const linkElement = e.target.closest('.gh-repo-link');
+                if (linkElement && linkElement.dataset.url) {
+                    window.open(linkElement.dataset.url, '_blank');
+                }
+            };
+            
+            // Remove previous listener if exists (to prevent duplicates on refresh)
+            profileDiv.removeEventListener('click', clickHandler);
+            reposDiv.removeEventListener('click', clickHandler);
+            
+            profileDiv.addEventListener('click', clickHandler);
+            reposDiv.addEventListener('click', clickHandler);
 
             safeSetItem('githubUsername', username);
         } catch (error) {
