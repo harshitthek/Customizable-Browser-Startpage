@@ -24,20 +24,14 @@ const backToThemesBtn = document.getElementById('back-to-themes-btn');
 const contextMenu = document.getElementById('context-menu');
 const contextEditBtn = document.getElementById('context-edit-btn');
 const contextDeleteBtn = document.getElementById('context-delete-btn');
-const flashlightBtn = document.getElementById('flashlight-btn');
-const muteBtn = document.getElementById('mute-btn');
-const flashlightSound = document.getElementById('flashlight-sound');
-// NOTE: pageOverlay reference was missing in your provided code, re-adding it.
-const pageOverlay = document.getElementById('page-overlay');
 
 // --- Data & State ---
 let links = [];
 let editingLinkIndex = null;
 let contextMenuLinkIndex = null;
-let flashlightOn = false;
-let isMuted = localStorage.getItem('isMuted') === 'true';
 let lastFocusedElement = null;
 let interactiveEffectsInitialized = false;
+let ghClickHandler = null;
 
 // --- Functions ---
 function safeSetItem(key, value) {
@@ -58,7 +52,10 @@ function showToast(message) {
     if (!container) return;
     const toast = document.createElement('div');
     toast.className = 'toast';
-    toast.innerHTML = `<span class="toast-message">${message}</span>`;
+    const msgSpan = document.createElement('span');
+    msgSpan.className = 'toast-message';
+    msgSpan.textContent = message;
+    toast.appendChild(msgSpan);
     container.appendChild(toast);
     setTimeout(() => {
         toast.classList.add('toast-out');
@@ -143,17 +140,6 @@ function handleName() {
     if (nameElement) nameElement.textContent = savedName || "Guest";
 }
 
-function playSound(soundEl) {
-    if (!isMuted && soundEl) {
-        soundEl.currentTime = 0;
-        soundEl.play().catch(e => console.error("Audio play failed.", e));
-    }
-}
-
-function updateMuteButton() {
-    if (muteBtn) muteBtn.textContent = isMuted ? '🔇' : '🔊';
-}
-
 function renderLinks() {
     if (!linksContainer) return;
     linksContainer.replaceChildren();
@@ -161,6 +147,8 @@ function renderLinks() {
         const linkItem = document.createElement('div');
         linkItem.className = 'link-item';
         linkItem.dataset.index = index;
+        linkItem.draggable = true;
+        linkItem.title = 'Drag to reorder';
 
         const linkAnchor = document.createElement('a');
         linkAnchor.className = 'link-anchor';
@@ -219,8 +207,6 @@ function deleteLink(index, linkElement) {
         setTimeout(() => { links.splice(index, 1); saveLinks(); renderLinks(); }, 300);
     }
 }
-//hi
-
 function loadLinks() {
     const savedLinks = localStorage.getItem('savedLinks');
     if (savedLinks) links = JSON.parse(savedLinks);
@@ -242,6 +228,14 @@ function applyTheme(theme) {
     if (theme === 'custom') {
         const savedAccent = localStorage.getItem('customAccentColor');
         if (savedAccent) applyAccentColor(savedAccent);
+    }
+    // Dev Dashboard lifecycle management
+    if (window.DevDashboard) {
+        if (theme === 'dev') {
+            window.DevDashboard.start();
+        } else {
+            window.DevDashboard.stop();
+        }
     }
 }
 
@@ -333,13 +327,49 @@ function initializeInteractiveEffects() {
             }
         });
 
-        // Handle mouseenter for sound
-        linksContainer.addEventListener('mouseover', (e) => {
+        // --- Drag & Drop Reordering ---
+        linksContainer.addEventListener('dragstart', (e) => {
             const linkItem = e.target.closest('.link-item');
-            if (linkItem) {
-                // console.log("Mouse entered item index:", linkItem.dataset.index); // Uncomment for detailed tracking
-                playSound(flashlightSound);
-            }
+            if (!linkItem) return;
+            linkItem.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', linkItem.dataset.index);
+        });
+
+        linksContainer.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            const linkItem = e.target.closest('.link-item');
+            if (!linkItem || linkItem.classList.contains('dragging')) return;
+            linkItem.classList.add('drag-over');
+        });
+
+        linksContainer.addEventListener('dragleave', (e) => {
+            const linkItem = e.target.closest('.link-item');
+            if (!linkItem) return;
+            linkItem.classList.remove('drag-over');
+        });
+
+        linksContainer.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const draggedIndex = parseInt(e.dataTransfer.getData('text/plain'), 10);
+            const targetItem = e.target.closest('.link-item');
+            if (!targetItem) return;
+            targetItem.classList.remove('drag-over');
+
+            const targetIndex = parseInt(targetItem.dataset.index, 10);
+            if (draggedIndex === targetIndex || isNaN(draggedIndex)) return;
+
+            // Reorder array
+            const [moved] = links.splice(draggedIndex, 1);
+            links.splice(targetIndex, 0, moved);
+            saveLinks();
+            renderLinks();
+        });
+
+        linksContainer.addEventListener('dragend', (e) => {
+            const linkItem = e.target.closest('.link-item');
+            if (linkItem) linkItem.classList.remove('dragging');
+            linksContainer.querySelectorAll('.link-item').forEach(item => item.classList.remove('drag-over'));
         });
 
     } else {
@@ -404,27 +434,87 @@ document.addEventListener('DOMContentLoaded', () => {
         closeModal();
     });
 
-    if (themeBtn && themePanel) themeBtn.addEventListener('click', () => themePanel.classList.toggle('hidden'));
+    // Function to close all slide panels
+    function closeAllPanels() {
+        document.querySelectorAll('.panel.slide-panel, .panel#context-menu').forEach(p => p.classList.add('hidden'));
+        document.querySelectorAll('.command-btn').forEach(btn => btn.classList.remove('active'));
+    }
+
+    // Toggle specific panel and close others
+    function togglePanel(panel, triggerBtn) {
+        if (!panel) return;
+        const isHidden = panel.classList.contains('hidden');
+        closeAllPanels();
+        if (isHidden) {
+            panel.classList.remove('hidden');
+            if (triggerBtn) triggerBtn.classList.add('active');
+        }
+    }
+
+    // Bind close buttons on all panels
+    document.querySelectorAll('.panel-close-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const panel = btn.closest('.panel') || btn.closest('.modal-overlay');
+            if (panel) panel.classList.add('hidden');
+            document.querySelectorAll('.command-btn').forEach(b => b.classList.remove('active'));
+        });
+    });
+
+    if (themeBtn && themePanel) {
+        themeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            togglePanel(themePanel, themeBtn);
+        });
+    }
+
+    const bgSettingsBtn = document.getElementById('bg-settings-btn');
+    const bgSettingsPanel = document.getElementById('bg-settings-panel');
+    if (bgSettingsBtn && bgSettingsPanel) {
+        bgSettingsBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            togglePanel(bgSettingsPanel, bgSettingsBtn);
+        });
+    }
+
+    const privacyBtn = document.getElementById('privacy-btn');
+    const privacyPanel = document.getElementById('privacy-panel');
+    if (privacyBtn && privacyPanel) {
+        privacyBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            togglePanel(privacyPanel, privacyBtn);
+        });
+    }
+
+    const clockSettingsBtn = document.getElementById('clock-settings-btn');
+    const clockSettingsPanel = document.getElementById('clock-settings-panel');
+    if (clockSettingsBtn && clockSettingsPanel) {
+        clockSettingsBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            togglePanel(clockSettingsPanel, null);
+        });
+    }
+
     if (themePanel) themePanel.addEventListener('click', (e) => {
-        const target = e.target;
+        const target = e.target.closest('.theme-option') || e.target;
         if (target.matches('.theme-option') && target.id !== 'custom-theme-btn') {
             const theme = target.dataset.theme;
             if (theme) applyTheme(theme);
         } else if (target.id === 'custom-theme-btn') {
             themePanel.classList.add('custom-view');
             if (customThemePanel) customThemePanel.classList.remove('hidden');
-            const savedAccent = localStorage.getItem('customAccentColor') || '#3b82f6';
+            const savedAccent = localStorage.getItem('customAccentColor') || '#38bdf8';
             if (accentColorInput) accentColorInput.value = savedAccent;
         } else if (target.id === 'save-custom-theme-btn') {
             if (accentColorInput) {
                 const newColor = accentColorInput.value;
                 safeSetItem('customAccentColor', newColor);
-                applyTheme('custom'); // Apply custom theme which also applies accent color
+                applyTheme('custom');
             }
-        } else if (target.id === 'back-to-themes-btn') { // CORRECTED BACK BUTTON LOGIC
+        } else if (target.id === 'back-to-themes-btn') {
             themePanel.classList.remove('custom-view');
             if (customThemePanel) customThemePanel.classList.add('hidden');
-            loadTheme(); // Reload last saved theme
+            loadTheme();
         }
     });
 
@@ -448,18 +538,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (contextMenu) contextMenu.classList.add('hidden');
     });
 
-    if (flashlightBtn) flashlightBtn.addEventListener('click', () => {
-        flashlightOn = !flashlightOn;
-        document.body.classList.toggle('flashlight-on', flashlightOn);
-        flashlightBtn.classList.toggle('active', flashlightOn);
-        playSound(flashlightSound);
-    });
-    if (muteBtn) muteBtn.addEventListener('click', () => {
-        isMuted = !isMuted;
-        safeSetItem('isMuted', isMuted);
-        updateMuteButton();
-    });
-
     // --- Initializations ---
     function startClock() {
         updateClock();
@@ -468,7 +546,6 @@ document.addEventListener('DOMContentLoaded', () => {
         setInterval(updateClock, 1000);
         setInterval(updateGreeting, 60000); // Update greeting every minute
     }
-    updateMuteButton(); // Call on load
     startClock();
     handleName();
     loadTheme();
@@ -637,23 +714,45 @@ function initSearch() {
 // --- Quote Widget ---
 const quotes = [
     { text: 'The only way to do great work is to love what you do.', author: 'Steve Jobs' },
-    { text: 'Innovation distinguishes between a leader and a follower.', author: 'Steve Jobs' },
+    { text: 'Simplicity is the prerequisite for reliability.', author: 'Edsger W. Dijkstra' },
+    { text: 'Make it work, make it right, make it fast.', author: 'Kent Beck' },
     { text: 'Code is like humor. When you have to explain it, it is bad.', author: 'Cory House' },
     { text: 'Simplicity is the soul of efficiency.', author: 'Austin Freeman' },
-    { text: 'First, solve the problem. Then, write the code.', author: 'John Johnson' }
+    { text: 'First, solve the problem. Then, write the code.', author: 'John Johnson' },
+    { text: 'Any fool can write code that a computer can understand. Good programmers write code that humans can understand.', author: 'Martin Fowler' }
 ];
+
 function initQuote() {
     const quoteText = document.getElementById('quote-text');
     const quoteAuthor = document.getElementById('quote-author');
     const widget = document.getElementById('quote-widget');
+    const refreshBtn = document.getElementById('quote-refresh-btn');
     if (!quoteText || !quoteAuthor) return;
+
     function showQuote() {
         const q = quotes[Math.floor(Math.random() * quotes.length)];
-        quoteText.textContent = `"${q.text}"`;
-        quoteAuthor.textContent = `- ${q.author}`;
+        quoteText.style.opacity = '0';
+        quoteAuthor.style.opacity = '0';
+        setTimeout(() => {
+            quoteText.textContent = `"${q.text}"`;
+            quoteAuthor.textContent = `- ${q.author}`;
+            quoteText.style.opacity = '1';
+            quoteAuthor.style.opacity = '1';
+        }, 150);
     }
     showQuote();
-    if (widget) widget.addEventListener('click', showQuote);
+
+    if (widget) {
+        widget.addEventListener('click', (e) => {
+            if (!e.target.closest('#quote-refresh-btn')) showQuote();
+        });
+    }
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            showQuote();
+        });
+    }
 }
 
 // Initialize on DOM ready
@@ -757,19 +856,19 @@ async function initGitHub() {
             `).join('');
 
             // Delegated event listener for CSP compliance
-            const clickHandler = (e) => {
+            if (ghClickHandler) {
+                profileDiv.removeEventListener('click', ghClickHandler);
+                reposDiv.removeEventListener('click', ghClickHandler);
+            }
+            ghClickHandler = (e) => {
                 const linkElement = e.target.closest('.gh-repo-link');
                 if (linkElement && linkElement.dataset.url) {
                     window.open(linkElement.dataset.url, '_blank');
                 }
             };
             
-            // Remove previous listener if exists (to prevent duplicates on refresh)
-            profileDiv.removeEventListener('click', clickHandler);
-            reposDiv.removeEventListener('click', clickHandler);
-            
-            profileDiv.addEventListener('click', clickHandler);
-            reposDiv.addEventListener('click', clickHandler);
+            profileDiv.addEventListener('click', ghClickHandler);
+            reposDiv.addEventListener('click', ghClickHandler);
 
             safeSetItem('githubUsername', username);
         } catch (error) {
@@ -1096,104 +1195,149 @@ function initExportImport() {
 function initSearchEngineSwitcher() {
     const iconContainer = document.getElementById('search-engine-icon');
     const icon = document.getElementById('engine-icon');
+    const dropdown = document.getElementById('search-engine-dropdown');
+    const mainSearchInput = document.getElementById('main-search-input');
+    const searchClearBtn = document.getElementById('search-clear-btn');
+    const searchBtn = document.getElementById('search-btn');
 
     if (!iconContainer) return;
 
     const engines = [
-        { name: 'Google', icon: 'https://www.google.com/favicon.ico', url: 'https://www.google.com/search?q=' },
-        { name: 'DuckDuckGo', icon: 'https://duckduckgo.com/favicon.ico', url: 'https://duckduckgo.com/?q=' },
-        { name: 'Bing', icon: 'https://www.bing.com/favicon.ico', url: 'https://www.bing.com/search?q=' },
-        { name: 'Brave', icon: 'https://brave.com/static-assets/images/brave-favicon.png', url: 'https://search.brave.com/search?q=' }
+        { id: 'google', name: 'Google', icon: 'https://www.google.com/favicon.ico', url: 'https://www.google.com/search?q=' },
+        { id: 'duckduckgo', name: 'DuckDuckGo', icon: 'https://duckduckgo.com/favicon.ico', url: 'https://duckduckgo.com/?q=' },
+        { id: 'bing', name: 'Bing', icon: 'https://www.bing.com/favicon.ico', url: 'https://www.bing.com/search?q=' },
+        { id: 'brave', name: 'Brave', icon: 'https://brave.com/static-assets/images/brave-favicon.png', url: 'https://search.brave.com/search?q=' },
+        { id: 'github', name: 'GitHub', icon: 'https://github.com/favicon.ico', url: 'https://github.com/search?q=' },
+        { id: 'youtube', name: 'YouTube', icon: 'https://www.youtube.com/favicon.ico', url: 'https://www.youtube.com/results?search_query=' }
     ];
 
     let currentIndex = parseInt(localStorage.getItem('searchEngineIndex')) || 0;
+    if (currentIndex >= engines.length) currentIndex = 0;
 
-    function updateEngine() {
+    function updateEngine(index) {
+        currentIndex = index;
         const engine = engines[currentIndex];
-        icon.src = engine.icon;
-        icon.alt = engine.name;
+        if (icon) {
+            icon.src = engine.icon;
+            icon.alt = engine.name;
+        }
         safeSetItem('searchEngineIndex', currentIndex);
+
+        // Update active in dropdown
+        if (dropdown) {
+            dropdown.querySelectorAll('.engine-option').forEach((opt) => {
+                opt.classList.toggle('active', opt.dataset.engine === engine.id);
+            });
+        }
     }
 
-    // Click on icon container to switch engines
+    // Toggle dropdown
     iconContainer.addEventListener('click', (e) => {
         e.stopPropagation();
-        currentIndex = (currentIndex + 1) % engines.length;
-        updateEngine();
+        if (dropdown) dropdown.classList.toggle('hidden');
     });
 
-    // Handle search from main search bar
-    const mainSearchInput = document.getElementById('main-search-input');
-    if (mainSearchInput) {
-        mainSearchInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter' && e.target.value.trim()) {
-                const query = e.target.value.trim();
-                window.open(engines[currentIndex].url + encodeURIComponent(query), '_blank');
-                e.target.value = '';
+    // Dropdown selection
+    if (dropdown) {
+        dropdown.addEventListener('click', (e) => {
+            const opt = e.target.closest('.engine-option');
+            if (opt) {
+                const engineId = opt.dataset.engine;
+                const foundIndex = engines.findIndex(eng => eng.id === engineId);
+                if (foundIndex !== -1) {
+                    updateEngine(foundIndex);
+                }
+                dropdown.classList.add('hidden');
             }
         });
     }
 
-    updateEngine();
+    // Close dropdown on outside click
+    document.addEventListener('click', (e) => {
+        if (dropdown && !dropdown.contains(e.target) && !iconContainer.contains(e.target)) {
+            dropdown.classList.add('hidden');
+        }
+    });
+
+    // Execute Search
+    function executeSearch() {
+        if (!mainSearchInput) return;
+        const query = mainSearchInput.value.trim();
+        if (!query) return;
+
+        // Check if query is direct URL
+        if (query.includes('.') && !query.includes(' ') && (query.startsWith('http://') || query.startsWith('https://') || !query.includes('://'))) {
+            const url = query.startsWith('http://') || query.startsWith('https://') ? query : 'https://' + query;
+            window.open(url, '_blank');
+        } else {
+            window.open(engines[currentIndex].url + encodeURIComponent(query), '_blank');
+        }
+        mainSearchInput.value = '';
+        if (searchClearBtn) searchClearBtn.classList.add('hidden');
+    }
+
+    // Handle input keypress
+    if (mainSearchInput) {
+        mainSearchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                executeSearch();
+            }
+        });
+
+        mainSearchInput.addEventListener('input', () => {
+            if (searchClearBtn) {
+                searchClearBtn.classList.toggle('hidden', mainSearchInput.value.length === 0);
+            }
+        });
+    }
+
+    // Search submit button
+    if (searchBtn) {
+        searchBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            executeSearch();
+        });
+    }
+
+    // Search clear button
+    if (searchClearBtn) {
+        searchClearBtn.addEventListener('click', () => {
+            if (mainSearchInput) {
+                mainSearchInput.value = '';
+                searchClearBtn.classList.add('hidden');
+                mainSearchInput.focus();
+            }
+        });
+    }
+
+    updateEngine(currentIndex);
 }
 
 // === GLOBAL PANEL CLOSE ON OUTSIDE CLICK ===
 document.addEventListener('click', (e) => {
     const panels = document.querySelectorAll('.panel:not(.hidden)');
-    const topButtons = document.querySelectorAll('.top-right-controls button');
+    const commandBar = document.querySelector('.top-command-bar');
     const clockSettingsBtn = document.getElementById('clock-settings-btn');
 
-    // Check if click is outside all panels and not on any button
-    let clickedButton = false;
-    topButtons.forEach(btn => {
-        if (btn.contains(e.target)) clickedButton = true;
-    });
-    if (clockSettingsBtn && clockSettingsBtn.contains(e.target)) clickedButton = true;
+    let clickedTrigger = false;
+    if (commandBar && commandBar.contains(e.target)) clickedTrigger = true;
+    if (clockSettingsBtn && clockSettingsBtn.contains(e.target)) clickedTrigger = true;
+    if (e.target.closest('#context-menu') || e.target.closest('.link-item')) clickedTrigger = true;
 
-    if (!clickedButton) {
+    if (!clickedTrigger) {
         panels.forEach(panel => {
-            if (!panel.contains(e.target)) {
+            if (!panel.contains(e.target) && !panel.classList.contains('modal-content')) {
                 panel.classList.add('hidden');
             }
         });
+        document.querySelectorAll('.command-btn').forEach(btn => btn.classList.remove('active'));
     }
 });
 
 // === SEARCH BAR FOCUS EFFECTS ===
 function initSearchBarEffects() {
-    const searchContainer = document.getElementById('main-search-container');
-    const searchInput = document.getElementById('main-search-input');
-    const searchBtn = document.getElementById('search-btn');
-
-    if (!searchInput) return;
-
-    // Focus effect - just scale and glow
-    searchInput.addEventListener('focus', () => {
-        searchContainer.classList.add('focused');
-    });
-
-    // Blur effect - remove focus
-    searchInput.addEventListener('blur', () => {
-        searchContainer.classList.remove('focused');
-    });
-
-    // Search button click
-    if (searchBtn) {
-        searchBtn.addEventListener('click', () => {
-            if (searchInput.value.trim()) {
-                const engines = [
-                    { name: 'Google', url: 'https://www.google.com/search?q=' },
-                    { name: 'DuckDuckGo', url: 'https://duckduckgo.com/?q=' },
-                    { name: 'Bing', url: 'https://www.bing.com/search?q=' },
-                    { name: 'Brave', url: 'https://search.brave.com/search?q=' }
-                ];
-                const currentIndex = parseInt(localStorage.getItem('searchEngineIndex')) || 0;
-                window.open(engines[currentIndex].url + encodeURIComponent(searchInput.value.trim()), '_blank');
-                searchInput.value = '';
-                searchInput.blur();
-            }
-        });
-    }
+    // Handled smoothly via CSS :focus-within
 }
 
 
