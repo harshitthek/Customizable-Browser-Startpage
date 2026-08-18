@@ -1009,6 +1009,9 @@ async function initGitHub() {
             const safeFollowers = parseInt(profile.followers, 10) || 0;
             const safeFollowing = parseInt(profile.following, 10) || 0;
             const safeGists = parseInt(profile.public_gists, 10) || 0;
+            const safeTopRepoUrl = (topRepo.html_url && isValidUrl(topRepo.html_url)) ? sanitizeInput(topRepo.html_url) : '';
+            const safeTopRepoName = sanitizeInput(topRepo.name || '');
+            const safeTopRepoStars = parseInt(topRepo.stargazers_count, 10) || 0;
 
             profileDiv.innerHTML = `
                 <div class="gh-profile-card">
@@ -1036,11 +1039,11 @@ async function initGitHub() {
                         <span class="stat-label">Gists</span>
                     </div>
                 </div>
-                ${topRepo.name && topRepo.stargazers_count > 0 ? `
-                    <div class="gh-top-repo gh-repo-link" data-url="${sanitizeInput(topRepo.html_url || '')}">
+                ${safeTopRepoName && safeTopRepoStars > 0 ? `
+                    <div class="gh-top-repo gh-repo-link" data-url="${safeTopRepoUrl}">
                         <div class="gh-top-repo-title">⭐ Most Starred</div>
-                        <div class="gh-top-repo-name">${sanitizeInput(topRepo.name)}</div>
-                        <div class="gh-top-repo-stars">${parseInt(topRepo.stargazers_count, 10) || 0} stars</div>
+                        <div class="gh-top-repo-name">${safeTopRepoName}</div>
+                        <div class="gh-top-repo-stars">${safeTopRepoStars} stars</div>
                     </div>
                 ` : ''}
             `;
@@ -1050,7 +1053,7 @@ async function initGitHub() {
                 const dotColor = langColors[safeRepoLang] || 'var(--accent-color)';
                 const safeRepoName = sanitizeInput(repo.name || '');
                 const safeRepoDesc = sanitizeInput(repo.description || 'No description');
-                const safeRepoUrl = sanitizeInput(repo.html_url || '');
+                const safeRepoUrl = (repo.html_url && isValidUrl(repo.html_url)) ? sanitizeInput(repo.html_url) : '';
                 const safeStars = parseInt(repo.stargazers_count, 10) || 0;
 
                 return `
@@ -1072,8 +1075,8 @@ async function initGitHub() {
             }
             ghClickHandler = (e) => {
                 const linkElement = e.target.closest('.gh-repo-link');
-                if (linkElement && linkElement.dataset.url) {
-                    window.open(linkElement.dataset.url, '_blank');
+                if (linkElement && linkElement.dataset.url && isValidUrl(linkElement.dataset.url)) {
+                    window.open(linkElement.dataset.url, '_blank', 'noopener,noreferrer');
                 }
             };
             
@@ -1082,19 +1085,20 @@ async function initGitHub() {
 
             safeSetItem('githubUsername', username);
         } catch (error) {
-            const is403 = error.message.includes('403') || error.message.includes('Forbidden');
-            const errorMsg = is403
+            const is403 = error?.message?.includes('403') || error?.message?.includes('Forbidden');
+            const rawErrorMsg = is403
                 ? 'GitHub API Rate Limit Exceeded'
-                : error.message;
-            const helpText = is403
+                : (error?.message || 'Error loading GitHub data');
+            const safeErrorMsg = sanitizeInput(rawErrorMsg);
+            const safeHelpText = sanitizeInput(is403
                 ? 'Too many requests. Try again in ~1 hour or use a different network.'
-                : 'Check if username exists on GitHub';
+                : 'Check if username exists on GitHub');
 
             profileDiv.innerHTML = `
                 <div class="gh-profile-loading" style="color: #ef4444; text-align: center; padding: 20px;">
                     <div style="font-size: 24px; margin-bottom: 10px;">⚠️</div>
-                    <div style="font-weight: 600; margin-bottom: 8px;">${errorMsg}</div>
-                    <div style="font-size: 11px; opacity: 0.8; line-height: 1.5;">${helpText}</div>
+                    <div style="font-weight: 600; margin-bottom: 8px;">${safeErrorMsg}</div>
+                    <div style="font-size: 11px; opacity: 0.8; line-height: 1.5;">${safeHelpText}</div>
                 </div>
             `;
         }
