@@ -9,16 +9,17 @@
                    script-src 'self'; 
                    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; 
                    img-src 'self' https: data:; 
-                   connect-src 'self' https://api.github.com https://api.quotable.io https://www.google.com; 
+                   connect-src 'self' https://api.github.com https://api.quotable.io https://www.google.com https://api.open-meteo.com https://geocoding-api.open-meteo.com; 
                    font-src 'self' https://fonts.gstatic.com; 
                    frame-src 'none'; 
                    object-src 'none'; 
                    base-uri 'self';">
-    <title>DailyCosmos</title>
+    <title>DailyCosmos — Precision Workstation</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Orbitron:wght@600;700;800;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
+    <script src="js/dev-dashboard.js" defer></script>
     <script src="js/main.js" defer></script>
     <script src="js/privacy.js" defer></script>
 </head>
@@ -27,128 +28,465 @@
     <!-- Theme Flash Prevention -->
     <script src="js/theme-init.js"></script>
 
-    <!-- Top Right UI Controls -->
-    <div class="top-right-controls" role="toolbar" aria-label="Main controls">
-        <button id="add-link-btn" title="Add New Link" aria-label="Add New Link">➕</button>
-        <button id="bg-settings-btn" title="Background Settings" aria-label="Background Settings">🖼️</button>
-        <button id="theme-btn" title="Change theme" aria-label="Change theme">🌈</button>
-        <button id="privacy-btn" title="Privacy & Security" aria-label="Privacy & Security">🔒</button>
-    </div>
+    <!-- Top Command Toolbar -->
+    <nav class="top-command-bar" role="toolbar" aria-label="Workstation controls">
+        <div class="command-bar-group">
+            <button id="add-link-btn" class="command-btn" title="Add Bookmark (N)" aria-label="Add Bookmark">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                <span class="btn-label">New Link</span>
+            </button>
+            <button id="bg-settings-btn" class="command-btn" title="Wallpaper Settings (B)" aria-label="Wallpaper Settings">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                <span class="btn-label">Wallpaper</span>
+            </button>
+            <button id="theme-btn" class="command-btn" title="Theme Palette (T)" aria-label="Theme Palette">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 10 10c0 2.5-2 4-4 4h-2a2 2 0 0 0-2 2c0 1.1-.9 2-2 2a10 10 0 0 1-2-18Z"/><circle cx="7.5" cy="10.5" r="1"/><circle cx="12" cy="7.5" r="1"/><circle cx="16.5" cy="10.5" r="1"/></svg>
+                <span class="btn-label">Theme</span>
+            </button>
+            <button id="privacy-btn" class="command-btn" title="Privacy & Security" aria-label="Privacy & Security">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </button>
+        </div>
+    </nav>
 
-    <!-- Particle Background -->
+    <!-- Ambient Canvas Background -->
     <canvas id="particle-canvas"></canvas>
 
-    <!-- Widget Panel -->
-    <div id="widget-panel">
-        <div id="search-widget" class="widget">
-            <label for="search-input" class="visually-hidden" style="display:none;">Search bookmarks</label>
-            <input type="text" id="search-input" aria-label="Search bookmarks" placeholder="🔍 Search bookmarks..." />
+    <!-- ========================================================
+         DEV DASHBOARD HUD VIEW
+         ======================================================== -->
+    <div id="dev-dashboard-view" class="dev-dashboard-view">
+        <!-- Header -->
+        <header class="dev-header">
+            <div class="dev-clock-display">
+                <span id="dev-clock-time">21:42</span>
+                <span class="dev-clock-divider">|</span>
+                <span id="dev-clock-date">FRI OCT 25</span>
+            </div>
+            <div class="dev-header-subtitle">
+                <span class="dev-pulse-dot"></span>
+                <span id="dev-status-tag">GLOBAL TIME</span>
+                <span id="dev-tz-label">UTC+00:00</span>
+            </div>
+        </header>
+
+        <!-- Main 2-Column Dashboard Grid -->
+        <div class="dev-grid">
+            <!-- LEFT CARD: LIVE WEATHER RADAR -->
+            <section class="dev-card dev-weather-card" id="dev-weather-widget">
+                <div class="dev-card-header">
+                    <div class="dev-card-title">
+                        <svg class="dev-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/><path d="M8 19v2m4-2v2m4-2v2"/></svg>
+                        <span>LIVE WEATHER RADAR</span>
+                    </div>
+                    <div class="dev-card-actions">
+                        <button class="dev-action-btn" id="dev-radar-layer-btn" title="Toggle Radar Mode" aria-label="Toggle Radar Mode">
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                        </button>
+                        <button class="dev-action-btn" id="dev-weather-config-btn" title="Weather Settings" aria-label="Weather Settings">
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="dev-weather-body">
+                    <!-- Left Subpanel: Interactive Radar Canvas -->
+                    <div class="dev-radar-container">
+                        <canvas id="dev-radar-canvas" width="280" height="280"></canvas>
+                        <div class="dev-radar-controls">
+                            <button id="dev-radar-zoom-in" title="Zoom In" aria-label="Zoom in radar">+</button>
+                            <button id="dev-radar-zoom-out" title="Zoom Out" aria-label="Zoom out radar">-</button>
+                        </div>
+                        <div class="dev-radar-tag">Interactive Atlas</div>
+                    </div>
+
+                    <!-- Right Subpanel: Live Weather Stats -->
+                    <div class="dev-weather-info">
+                        <div class="dev-weather-condition-icon" id="dev-weather-main-icon"></div>
+                        <div class="dev-weather-headline">
+                            <div class="dev-weather-state" id="dev-weather-state">Rainy</div>
+                            <div class="dev-weather-temp" id="dev-weather-temp">14°C</div>
+                        </div>
+                        <div class="dev-weather-details">
+                            <div class="dev-weather-metric">
+                                <span class="metric-icon">💧</span>
+                                <span id="dev-weather-humidity">88% Humidity</span>
+                            </div>
+                            <div class="dev-weather-metric">
+                                <span class="metric-icon">💨</span>
+                                <span id="dev-weather-wind">Wind 13km/h</span>
+                            </div>
+                        </div>
+                        <div class="dev-weather-telemetry-row">
+                            <span class="telemetry-chip" id="dev-wind-dir" title="Wind Direction">↗ 240°</span>
+                            <span class="telemetry-chip" id="dev-uv-index" title="UV Index">☀ UV 1</span>
+                            <span class="telemetry-chip" id="dev-pressure-val" title="Barometric Pressure">1013hPa</span>
+                        </div>
+                        <div class="dev-weather-location-bar" title="Click to change city">
+                            <span id="dev-city-name">London</span>
+                            <button id="dev-city-search-btn" class="dev-mini-btn" title="Change Location">📍</button>
+                        </div>
+                        <div class="dev-weather-bottom-bar">
+                            <button class="dev-weather-forecast-btn active" title="Rain radar" data-forecast="rain">🌧️</button>
+                            <button class="dev-weather-forecast-btn" title="Storm radar" data-forecast="storm">⚡</button>
+                            <button class="dev-weather-forecast-btn" title="Wind stream" data-forecast="wind">🍃</button>
+                            <button class="dev-weather-forecast-btn" title="Toggle Units (°C / °F)" id="dev-unit-toggle">°C/°F</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- RIGHT COLUMN: TELEMETRY + QUICK SEARCH -->
+            <div class="dev-right-column">
+                <!-- TOP CARD: SYSTEM TELEMETRY -->
+                <section class="dev-card dev-telemetry-card" id="dev-telemetry-widget">
+                    <div class="dev-card-header">
+                        <div class="dev-card-title">
+                            <svg class="dev-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 1v3m6-3v3M9 20v3m6-3v3M20 9h3m-3 6h3M1 9h3m-3 6h3"/></svg>
+                            <span>SYSTEM TELEMETRY</span>
+                        </div>
+                        <div class="dev-card-actions">
+                            <span class="dev-live-badge"><span class="dev-live-dot"></span> LIVE</span>
+                            <button class="dev-action-btn" id="dev-telemetry-config-btn" title="Telemetry Settings" aria-label="Telemetry Settings">
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="dev-telemetry-grid">
+                        <!-- CPU Block -->
+                        <div class="dev-telemetry-cell" id="dev-cell-cpu">
+                            <div class="dev-gauge-wrap">
+                                <svg class="dev-radial-gauge" viewBox="0 0 64 64">
+                                    <circle class="gauge-bg" cx="32" cy="32" r="26" />
+                                    <circle class="gauge-fill" id="dev-cpu-gauge-fill" cx="32" cy="32" r="26" stroke-dasharray="163.36" stroke-dashoffset="94" />
+                                </svg>
+                                <span class="gauge-text" id="dev-cpu-percent">42%</span>
+                            </div>
+                            <div class="dev-chart-wrap">
+                                <div class="dev-chart-header">
+                                    <span class="chart-label">CPU Usage</span>
+                                    <span class="chart-meta" id="dev-cpu-cores">8 Cores</span>
+                                </div>
+                                <canvas id="dev-cpu-canvas" width="160" height="42"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- RAM Block -->
+                        <div class="dev-telemetry-cell" id="dev-cell-ram">
+                            <div class="dev-gauge-wrap">
+                                <svg class="dev-radial-gauge" viewBox="0 0 64 64">
+                                    <circle class="gauge-bg" cx="32" cy="32" r="26" />
+                                    <circle class="gauge-fill" id="dev-ram-gauge-fill" cx="32" cy="32" r="26" stroke-dasharray="163.36" stroke-dashoffset="117" />
+                                </svg>
+                                <span class="gauge-text" id="dev-ram-percent">28%</span>
+                            </div>
+                            <div class="dev-chart-wrap">
+                                <div class="dev-chart-header">
+                                    <span class="chart-label">RAM</span>
+                                    <span class="chart-meta" id="dev-ram-stats">7.3/7.9GB</span>
+                                </div>
+                                <canvas id="dev-ram-canvas" width="160" height="42"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- GPU Block -->
+                        <div class="dev-telemetry-cell" id="dev-cell-gpu">
+                            <div class="dev-gauge-wrap">
+                                <svg class="dev-radial-gauge" viewBox="0 0 64 64">
+                                    <circle class="gauge-bg" cx="32" cy="32" r="26" />
+                                    <circle class="gauge-fill" id="dev-gpu-gauge-fill" cx="32" cy="32" r="26" stroke-dasharray="163.36" stroke-dashoffset="117" />
+                                </svg>
+                                <span class="gauge-text" id="dev-gpu-percent">28%</span>
+                            </div>
+                            <div class="dev-chart-wrap">
+                                <div class="dev-chart-header">
+                                    <span class="chart-label">GPU</span>
+                                    <span class="chart-meta" id="dev-gpu-fps">60 FPS</span>
+                                </div>
+                                <canvas id="dev-gpu-canvas" width="160" height="42"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Disk Block -->
+                        <div class="dev-telemetry-cell" id="dev-cell-disk">
+                            <div class="dev-gauge-wrap">
+                                <svg class="dev-radial-gauge" viewBox="0 0 64 64">
+                                    <circle class="gauge-bg" cx="32" cy="32" r="26" />
+                                    <circle class="gauge-fill" id="dev-disk-gauge-fill" cx="32" cy="32" r="26" stroke-dasharray="163.36" stroke-dashoffset="42" />
+                                </svg>
+                                <span class="gauge-text" id="dev-disk-percent">74%</span>
+                            </div>
+                            <div class="dev-chart-wrap">
+                                <div class="dev-chart-header">
+                                    <span class="chart-label">Disk</span>
+                                    <span class="chart-meta" id="dev-disk-stats">NVMe SSD</span>
+                                </div>
+                                <canvas id="dev-disk-canvas" width="160" height="42"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Network Telemetry Bar -->
+                    <div class="dev-net-footer">
+                        <div class="dev-net-stat">
+                            <span class="net-arrow down">↓</span>
+                            <span class="net-text">Download <strong id="dev-net-down">185Mbps</strong></span>
+                        </div>
+                        <span class="dev-net-divider">/</span>
+                        <div class="dev-net-stat">
+                            <span class="net-arrow up">↑</span>
+                            <span class="net-text">Upload <strong id="dev-net-up">94Mbps</strong></span>
+                        </div>
+                        <div class="dev-net-ping">
+                            <span class="ping-dot"></span>
+                            <span id="dev-net-ping-val">12ms</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- BOTTOM CARD: QUICK SEARCH -->
+                <section class="dev-card dev-search-card" id="dev-search-widget">
+                    <div class="dev-card-header">
+                        <div class="dev-card-title">
+                            <svg class="dev-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                            <span>QUICK LAUNCH & SEARCH</span>
+                        </div>
+                        <div class="dev-card-actions">
+                            <button class="dev-action-btn" id="dev-search-settings-btn" title="Search Settings" aria-label="Search Settings">
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="dev-search-bar-wrap">
+                        <form id="dev-search-form" class="dev-search-pill">
+                            <span class="search-lens-icon">
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                            </span>
+                            <input type="text" id="dev-search-input" placeholder="Search the web or type URL..." autocomplete="off" spellcheck="false" />
+                            <div class="dev-quick-badges">
+                                <a href="https://www.google.com" target="_blank" rel="noopener noreferrer" class="dev-badge badge-google" title="Google Search" data-engine="google">
+                                    <span>G</span>
+                                </a>
+                                <a href="https://github.com" target="_blank" rel="noopener noreferrer" class="dev-badge badge-github" title="GitHub" data-engine="github">
+                                    <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+                                </a>
+                                <a href="https://stackoverflow.com" target="_blank" rel="noopener noreferrer" class="dev-badge badge-so" title="Stack Overflow" data-engine="stackoverflow">
+                                    <span>SO</span>
+                                </a>
+                                <a href="https://leetcode.com" target="_blank" rel="noopener noreferrer" class="dev-badge badge-leetcode" title="LeetCode" data-engine="leetcode">
+                                    <span>LC</span>
+                                </a>
+                                <a href="https://dev.to" target="_blank" rel="noopener noreferrer" class="dev-badge badge-devto" title="DEV Community" data-engine="devto">
+                                    <span class="badge-text-dev">DEV</span>
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </section>
+            </div>
         </div>
-        <div id="quote-widget" class="widget">
+    </div>
+
+    <!-- ========================================================
+         STANDARD WORKSTATION VIEW
+         ======================================================== -->
+    <!-- Left Sidebar Widgets (Search & Inspiration) -->
+    <aside id="widget-panel" class="sidebar-widget-panel">
+        <div id="search-widget" class="widget-card">
+            <label for="search-input" class="visually-hidden">Search bookmarks</label>
+            <div class="search-widget-wrap">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" class="search-widget-icon"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                <input type="text" id="search-input" placeholder="Filter bookmarks..." autocomplete="off" />
+            </div>
+        </div>
+        <div id="quote-widget" class="widget-card quote-card" title="Click to get new quote">
+            <div class="quote-header">
+                <span class="quote-tag">Inspiration</span>
+                <button id="quote-refresh-btn" class="quote-refresh-btn" title="Refresh Quote" aria-label="Refresh Quote">
+                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                </button>
+            </div>
             <p id="quote-text">"Loading..."</p>
             <span id="quote-author">- Author</span>
         </div>
-    </div>
+    </aside>
 
-    <!-- GitHub Panel (Right Side) -->
-    <div id="github-panel">
-        <div id="github-widget" class="widget">
-            <h3 class="widget-title">💻 GitHub</h3>
+    <!-- Right Sidebar Widget (GitHub) -->
+    <aside id="github-panel" class="sidebar-widget-panel">
+        <div id="github-widget" class="widget-card github-card">
+            <div class="github-card-header">
+                <div class="gh-title-wrap">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+                    <span>GitHub</span>
+                </div>
+            </div>
             <div id="github-profile">
-                <div class="gh-profile-loading">Loading...</div>
+                <div class="gh-profile-loading">Loading developer profile...</div>
             </div>
             <div id="github-repos"></div>
-            <label for="gh-username-input" class="visually-hidden" style="display:none;">GitHub username</label>
-            <input type="text" id="gh-username-input" aria-label="GitHub username" placeholder="GitHub username">
-            <button id="gh-update-btn" class="btn-primary">Update</button>
+            <div class="gh-config-row">
+                <label for="gh-username-input" class="visually-hidden">GitHub username</label>
+                <input type="text" id="gh-username-input" placeholder="GitHub username" autocomplete="off">
+                <button id="gh-update-btn" class="btn-primary">Update</button>
+            </div>
         </div>
-    </div>
+    </aside>
 
-    <main>
-        <!-- Main Search Bar (Top Position) -->
-        <div id="main-search-container" role="search">
-            <button id="search-engine-icon" title="Click to switch" aria-label="Switch search engine" style="background:none;border:none;padding:0;">
-                <img src="https://www.google.com/favicon.ico" alt="Search" id="engine-icon">
+    <!-- Main Central Workstation -->
+    <main class="main-workstation">
+        <!-- Spotlight Search Bar -->
+        <div id="main-search-container" class="spotlight-search-wrap" role="search">
+            <div class="search-engine-picker-wrap">
+                <button id="search-engine-icon" class="engine-picker-btn" title="Switch Search Engine" aria-label="Switch Search Engine">
+                    <img src="https://www.google.com/favicon.ico" alt="Engine" id="engine-icon">
+                    <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" class="engine-chevron"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div id="search-engine-dropdown" class="engine-dropdown hidden">
+                    <button class="engine-option active" data-engine="google">
+                        <img src="https://www.google.com/favicon.ico" alt="Google"> Google
+                    </button>
+                    <button class="engine-option" data-engine="duckduckgo">
+                        <img src="https://duckduckgo.com/favicon.ico" alt="DuckDuckGo"> DuckDuckGo
+                    </button>
+                    <button class="engine-option" data-engine="bing">
+                        <img src="https://www.bing.com/favicon.ico" alt="Bing"> Bing
+                    </button>
+                    <button class="engine-option" data-engine="brave">
+                        <img src="https://brave.com/static-assets/images/brave-favicon.png" alt="Brave"> Brave
+                    </button>
+                    <button class="engine-option" data-engine="github">
+                        <img src="https://github.com/favicon.ico" alt="GitHub"> GitHub
+                    </button>
+                    <button class="engine-option" data-engine="youtube">
+                        <img src="https://www.youtube.com/favicon.ico" alt="YouTube"> YouTube
+                    </button>
+                </div>
+            </div>
+            <label for="main-search-input" class="visually-hidden">Search query</label>
+            <input type="text" id="main-search-input" placeholder="Search the web or type a command..." autocomplete="off" spellcheck="false">
+            <button id="search-clear-btn" class="search-clear-btn hidden" title="Clear input" aria-label="Clear input">&times;</button>
+            <div class="search-shortcut-pill" title="Press / to focus">/</div>
+            <button id="search-btn" class="search-submit-btn" title="Search" aria-label="Search">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
             </button>
-            <label for="main-search-input" class="visually-hidden" style="display:none;">Search query</label>
-            <input type="text" id="main-search-input" placeholder="Search the web..." aria-label="Search query">
-            <button id="search-btn" title="Search" aria-label="Search">🔍</button>
         </div>
 
-        <div class="container">
-            <h1 id="greeting">Good day, <span id="name" tabindex="0" role="button" aria-label="Change name">Guest</span></h1>
-            <div id="clock" aria-live="polite">--:--:--</div>
-            <button id="clock-settings-btn" class="clock-settings-icon" title="Clock Settings" aria-label="Clock Settings">⚙️</button>
-            <div id="date"></div>
+        <!-- Hero Display (Greeting, Clock & Date) -->
+        <div class="hero-container">
+            <h1 id="greeting" class="hero-greeting">
+                Good day, <span id="name" tabindex="0" role="button" aria-label="Change name" title="Click to edit name">Guest</span>
+                <span class="greeting-edit-icon" title="Edit name">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                </span>
+            </h1>
+            <div class="clock-wrap">
+                <div id="clock" class="hero-clock" aria-live="polite">--:--:--</div>
+                <button id="clock-settings-btn" class="clock-config-btn" title="Clock Settings" aria-label="Clock Settings">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                </button>
+            </div>
+            <div id="date" class="hero-date"></div>
         </div>
-        <section id="links-container"></section>
+
+        <!-- Bookmarks Grid -->
+        <section id="links-container" class="bookmarks-grid" aria-label="Bookmarks"></section>
     </main>
 
-    <!-- Panels, Modals, and Audio -->
-    <div id="toast-container" aria-live="polite"></div>
-    <div id="context-menu" class="panel hidden" role="menu">
-        <button id="context-edit-btn" role="menuitem">✏️ Edit</button>
-        <button id="context-delete-btn" role="menuitem">❌ Delete</button>
+    <!-- ========================================================
+         PANELS, DRAWERS & MODALS
+         ======================================================== -->
+    <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+    <!-- Context Menu -->
+    <div id="context-menu" class="panel context-menu-panel hidden" role="menu">
+        <button id="context-edit-btn" class="context-item" role="menuitem">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            <span>Edit Bookmark</span>
+        </button>
+        <button id="context-delete-btn" class="context-item danger" role="menuitem">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            <span>Delete Bookmark</span>
+        </button>
     </div>
 
-    <div id="theme-panel" class="panel hidden" role="region" aria-label="Theme settings">
-        <h3>Themes</h3>
-        <button class="theme-option" data-theme="slate">Dark Slate</button>
-        <button class="theme-option" data-theme="light">Light</button>
-        <button class="theme-option" data-theme="ocean">Ocean</button>
-        <button class="theme-option" data-theme="cyberpunk">🌃 Cyberpunk</button>
-        <button class="theme-option" data-theme="sunset">🌅 Sunset</button>
-        <button class="theme-option" data-theme="forest">🌲 Forest</button>
-        <button class="theme-option" data-theme="aurora">✨ Aurora Wave</button>
-        <button class="theme-option" data-theme="northern">🌌 Northern Lights</button>
-        <button class="theme-option" data-theme="midnight">🌙 Midnight</button>
-        <button class="theme-option" data-theme="rosegold">🌹 Rose Gold</button>
-        <button class="theme-option" id="custom-theme-btn">Custom</button>
+    <!-- Theme Palette Panel -->
+    <div id="theme-panel" class="panel slide-panel hidden" role="region" aria-label="Theme settings">
+        <div class="panel-header">
+            <h3>Theme Palette</h3>
+            <button class="panel-close-btn" aria-label="Close panel">&times;</button>
+        </div>
+        <div class="themes-grid">
+            <button class="theme-option" data-theme="dev">⚡ Dev HUD</button>
+            <button class="theme-option" data-theme="slate">Dark Slate</button>
+            <button class="theme-option" data-theme="light">Daylight</button>
+            <button class="theme-option" data-theme="ocean">Deep Ocean</button>
+            <button class="theme-option" data-theme="cyberpunk">Cyberpunk</button>
+            <button class="theme-option" data-theme="sunset">Warm Sunset</button>
+            <button class="theme-option" data-theme="forest">Evergreen</button>
+            <button class="theme-option" data-theme="aurora">Aurora Wave</button>
+            <button class="theme-option" data-theme="northern">Northern Lights</button>
+            <button class="theme-option" data-theme="midnight">Midnight</button>
+            <button class="theme-option" data-theme="rosegold">Rose Gold</button>
+            <button class="theme-option" id="custom-theme-btn">Custom Accent</button>
+        </div>
 
-        <!-- THIS WAS MISSING - ADDED BACK -->
-        <div id="custom-theme-panel" class="hidden">
-            <div class="color-picker-group">
+        <div id="custom-theme-panel" class="custom-theme-box hidden">
+            <div class="form-group">
                 <label for="accent-color-input">Accent Color</label>
-                <input type="color" id="accent-color-input" value="#3b82f6">
+                <input type="color" id="accent-color-input" value="#38bdf8">
             </div>
             <div class="form-buttons">
-                <button type="button" class="btn-primary" id="save-custom-theme-btn">Save</button>
+                <button type="button" class="btn-primary" id="save-custom-theme-btn">Save Accent</button>
                 <button type="button" class="btn-secondary" id="back-to-themes-btn">Back</button>
             </div>
         </div>
     </div>
 
-    <div id="bg-settings-panel" class="panel hidden" role="region" aria-label="Background settings">
-        <h3>Background Settings</h3>
+    <!-- Wallpaper Settings Panel -->
+    <div id="bg-settings-panel" class="panel slide-panel hidden" role="region" aria-label="Background settings">
+        <div class="panel-header">
+            <h3>Wallpaper Settings</h3>
+            <button class="panel-close-btn" aria-label="Close panel">&times;</button>
+        </div>
         <div class="form-group">
-            <label for="bg-image-upload">Upload Image</label>
-            <input type="file" id="bg-image-upload" accept="image/*">
+            <label for="bg-image-upload">Upload Local Image</label>
+            <input type="file" id="bg-image-upload" accept="image/*" class="file-input">
         </div>
         <div class="form-group">
             <label for="bg-image-url">Or Image URL</label>
-            <input type="text" id="bg-image-url" placeholder="https://example.com/image.jpg">
-            <button type="button" class="btn-primary" id="apply-bg-url">Apply</button>
+            <div class="input-action-row">
+                <input type="text" id="bg-image-url" placeholder="https://images.unsplash.com/...">
+                <button type="button" class="btn-primary" id="apply-bg-url">Apply</button>
+            </div>
         </div>
         <div class="form-group">
-            <label for="bg-blur">Blur: <span id="blur-value">5</span>px</label>
-            <input type="range" id="bg-blur" min="0" max="20" value="5">
+            <div class="range-header">
+                <label for="bg-blur">Blur</label>
+                <span id="blur-value" class="range-badge">5px</span>
+            </div>
+            <input type="range" id="bg-blur" min="0" max="20" value="5" class="custom-range">
         </div>
         <div class="form-group">
-            <label for="bg-brightness">Brightness: <span id="brightness-value">100</span>%</label>
-            <input type="range" id="bg-brightness" min="50" max="150" value="100">
+            <div class="range-header">
+                <label for="bg-brightness">Brightness</label>
+                <span id="brightness-value" class="range-badge">100%</span>
+            </div>
+            <input type="range" id="bg-brightness" min="50" max="150" value="100" class="custom-range">
         </div>
         <div class="form-group">
             <label for="bg-fit-mode">Image Fit</label>
-            <select id="bg-fit-mode">
-                <option value="cover">Cover</option>
-                <option value="contain">Contain</option>
-                <option value="fill">Fill</option>
+            <select id="bg-fit-mode" class="custom-select">
+                <option value="cover">Cover (Fill screen)</option>
+                <option value="contain">Contain (Fit within)</option>
+                <option value="fill">Stretch</option>
                 <option value="center crop">Center Crop</option>
             </select>
         </div>
         <div class="form-group">
             <label for="bg-gradient-select">Gradient Fallback</label>
-            <select id="bg-gradient-select">
+            <select id="bg-gradient-select" class="custom-select">
                 <option value="none">None (Theme Default)</option>
                 <option value="deep orbit">Deep Orbit</option>
                 <option value="dawn mist">Dawn Mist</option>
@@ -156,57 +494,70 @@
                 <option value="ember">Ember</option>
             </select>
         </div>
-        <button type="button" class="btn-secondary" id="reset-bg-btn">Reset Background</button>
-        <hr style="margin: 20px 0; border: 1px solid rgba(255,255,255,0.1);">
-        <h4 style="font-size: 14px; margin-bottom: 10px;">Backup & Restore</h4>
-        <button type="button" class="btn-primary" id="export-settings-btn" style="width: 100%; margin-bottom: 8px;">⬇️
-            Export All Settings</button>
-        <label for="import-settings-input" class="visually-hidden" style="display:none;">Import settings file</label>
+        <button type="button" class="btn-secondary full-width" id="reset-bg-btn">Reset Wallpaper</button>
+        
+        <div class="panel-divider"></div>
+        <h4 class="subheading">Backup & Portability</h4>
+        <button type="button" class="btn-secondary full-width mb-2" id="export-settings-btn">⬇️ Export Settings (JSON)</button>
+        <label for="import-settings-input" class="visually-hidden">Import settings file</label>
         <input type="file" id="import-settings-input" accept=".json" style="display: none;">
-        <button type="button" class="btn-secondary" id="import-settings-btn" style="width: 100%;">⬆️ Import
-            Settings</button>
+        <button type="button" class="btn-secondary full-width" id="import-settings-btn">⬆️ Import Settings</button>
     </div>
 
-    <div id="clock-settings-panel" class="panel hidden" role="region" aria-label="Clock settings">
-        <button class="close-btn" aria-label="Close panel">&times;</button>
-        <h3>Clock Settings</h3>
+    <!-- Clock Settings Panel -->
+    <div id="clock-settings-panel" class="panel slide-panel hidden" role="region" aria-label="Clock settings">
+        <div class="panel-header">
+            <h3>Clock Format</h3>
+            <button class="panel-close-btn close-btn" aria-label="Close panel">&times;</button>
+        </div>
         <div class="form-group">
-            <label for="clock-24hr">
-                <input type="checkbox" id="clock-24hr"> 24-hour format
+            <label class="toggle-label">
+                <input type="checkbox" id="clock-24hr">
+                <span class="toggle-custom"></span>
+                <span>24-Hour Format</span>
             </label>
         </div>
         <div class="form-group">
-            <label for="clock-seconds">
-                <input type="checkbox" id="clock-seconds" checked> Show seconds
+            <label class="toggle-label">
+                <input type="checkbox" id="clock-seconds" checked>
+                <span class="toggle-custom"></span>
+                <span>Show Seconds</span>
             </label>
         </div>
     </div>
 
+    <!-- Add/Edit Bookmark Modal -->
     <div id="add-link-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
         <div class="modal-content panel">
-            <button class="close-btn" aria-label="Close modal">&times;</button>
-            <h2 id="modal-title">Add New Link</h2>
+            <div class="panel-header">
+                <h2 id="modal-title">Add New Bookmark</h2>
+                <button class="panel-close-btn close-btn" aria-label="Close modal">&times;</button>
+            </div>
             <form id="add-link-form" novalidate>
                 <div class="form-group">
-            <label for="link-name-input">Name</label>
-            <input type="text" id="link-name-input" required autocomplete="off">
-        </div>
-        <div class="form-group">
-            <label for="link-url-input">URL</label>
-            <input type="url" id="link-url-input" placeholder="https://example.com" required autocomplete="off">
-        </div>
+                    <label for="link-name-input">Bookmark Title</label>
+                    <input type="text" id="link-name-input" placeholder="e.g. GitHub Dashboard" required autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label for="link-url-input">Target URL</label>
+                    <input type="url" id="link-url-input" placeholder="https://github.com" required autocomplete="off">
+                </div>
                 <div class="form-buttons">
-                    <button type="submit" class="btn-primary" id="modal-submit-btn">Add Link</button>
+                    <button type="submit" class="btn-primary" id="modal-submit-btn">Save Bookmark</button>
                     <button type="button" class="btn-secondary" id="cancel-btn">Cancel</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <div id="privacy-panel" class="panel hidden" role="region" aria-label="Privacy settings">
-        <h3>Privacy & Security</h3>
-        <p>All data stored locally. No tracking.</p>
-        <button id="clear-all-data-btn" class="btn-danger">Clear All Data</button>
+    <!-- Privacy Panel -->
+    <div id="privacy-panel" class="panel slide-panel hidden" role="region" aria-label="Privacy settings">
+        <div class="panel-header">
+            <h3>Privacy & Storage</h3>
+            <button class="panel-close-btn" aria-label="Close panel">&times;</button>
+        </div>
+        <p class="privacy-description">All bookmarks, telemetry preferences, and wallpapers are stored 100% locally on your browser. Zero telemetry is tracked or uploaded to external servers.</p>
+        <button id="clear-all-data-btn" class="btn-danger full-width">Clear Local Data</button>
     </div>
 
 </body>

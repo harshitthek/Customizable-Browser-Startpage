@@ -34,9 +34,32 @@ describe('DailyCosmos UI and Core Logic', () => {
         };
 
         window.HTMLCanvasElement.prototype.getContext = function () {
-            return { clearRect: function() {}, fillRect: function() {}, beginPath: function() {}, arc: function() {}, fill: function() {}, stroke: function() {}, moveTo: function() {}, lineTo: function() {} };
+            const gradMock = { addColorStop: function() {} };
+            return {
+                clearRect: function() {},
+                fillRect: function() {},
+                beginPath: function() {},
+                arc: function() {},
+                fill: function() {},
+                stroke: function() {},
+                moveTo: function() {},
+                lineTo: function() {},
+                fillText: function() {},
+                bezierCurveTo: function() {},
+                closePath: function() {},
+                createRadialGradient: function() { return gradMock; },
+                createLinearGradient: function() { return gradMock; },
+                createConicGradient: function() { return gradMock; }
+            };
         };
-        window.requestAnimationFrame = function(callback) { setTimeout(callback, 0); };
+        window.requestAnimationFrame = function(callback) { return setTimeout(callback, 0); };
+        window.cancelAnimationFrame = function(id) { clearTimeout(id); };
+        window.fetch = window.fetch || function() {
+            return Promise.resolve({
+                ok: true,
+                json: () => Promise.resolve({ current: { temperature_2m: 14, relative_humidity_2m: 88, wind_speed_10m: 13, weather_code: 63 } })
+            });
+        };
 
         dom.window.eval(js);
         document.dispatchEvent(new window.Event('DOMContentLoaded'));
@@ -147,5 +170,31 @@ describe('DailyCosmos UI and Core Logic', () => {
         
         // The toast should show up
         expect(window.lastAlert).toContain('Storage quota exceeded');
+    });
+
+    it('Dev Dashboard: activates theme and verifies all core widgets exist in DOM', () => {
+        const devJsPath = path.resolve(__dirname, '../js/dev-dashboard.js');
+        const devJs = fs.readFileSync(devJsPath, 'utf8');
+
+        const { document, window } = setupDOM();
+        window.eval(devJs);
+
+        const devThemeBtn = document.querySelector('.theme-option[data-theme="dev"]');
+        expect(devThemeBtn).toBeTruthy();
+        devThemeBtn.click();
+
+        expect(document.body.dataset.theme).toBe('dev');
+        expect(window.localStorage.getItem('savedTheme')).toBe('dev');
+
+        // Check essential Dev Dashboard elements
+        expect(document.getElementById('dev-dashboard-view')).toBeTruthy();
+        expect(document.getElementById('dev-clock-time')).toBeTruthy();
+        expect(document.getElementById('dev-clock-date')).toBeTruthy();
+        expect(document.getElementById('dev-radar-canvas')).toBeTruthy();
+        expect(document.getElementById('dev-weather-widget')).toBeTruthy();
+        expect(document.getElementById('dev-telemetry-widget')).toBeTruthy();
+        expect(document.getElementById('dev-search-widget')).toBeTruthy();
+        expect(document.getElementById('dev-search-input')).toBeTruthy();
+        expect(document.querySelectorAll('.dev-badge').length).toBeGreaterThanOrEqual(5);
     });
 });
