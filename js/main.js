@@ -945,8 +945,24 @@ async function initGitHub() {
             // Find top starred repo overall
             const topRepo = allRepos.reduce((max, repo) => repo.stargazers_count > (max.stargazers_count || 0) ? repo : max, {});
             
-            // Get most recently updated 5 repos
-            const repos = allRepos.slice(0, 5);
+            // Get most recently updated repos excluding the top starred repo if present
+            const otherRepos = allRepos.filter(r => r.name !== topRepo.name);
+            const repos = (topRepo.name && topRepo.stargazers_count > 0 ? otherRepos : allRepos).slice(0, 3);
+
+            const langColors = {
+                JavaScript: '#f1e05a',
+                TypeScript: '#3178c6',
+                Python: '#3572A5',
+                HTML: '#e34c26',
+                CSS: '#563d7c',
+                Rust: '#dea584',
+                Go: '#00ADD8',
+                Java: '#b07219',
+                'C++': '#f34b7d',
+                C: '#555555',
+                Shell: '#89e051',
+                Vue: '#41b883'
+            };
 
             profileDiv.innerHTML = `
                 <div class="gh-profile-card">
@@ -959,7 +975,7 @@ async function initGitHub() {
                 <div class="gh-stats-grid">
                     <div class="gh-stat-box">
                         <span class="stat-value">${profile.public_repos}</span>
-                        <span class="stat-label">Repositories</span>
+                        <span class="stat-label">Repos</span>
                     </div>
                     <div class="gh-stat-box">
                         <span class="stat-value">${profile.followers}</span>
@@ -974,25 +990,28 @@ async function initGitHub() {
                         <span class="stat-label">Gists</span>
                     </div>
                 </div>
-                ${topRepo.name ? `
+                ${topRepo.name && topRepo.stargazers_count > 0 ? `
                     <div class="gh-top-repo gh-repo-link" data-url="${topRepo.html_url}">
-                        <div class="gh-top-repo-title">🏆 Most Starred</div>
+                        <div class="gh-top-repo-title">⭐ Most Starred</div>
                         <div class="gh-top-repo-name">${topRepo.name}</div>
-                        <div class="gh-top-repo-stars">⭐ ${topRepo.stargazers_count} stars</div>
+                        <div class="gh-top-repo-stars">${topRepo.stargazers_count} stars</div>
                     </div>
                 ` : ''}
             `;
 
-            reposDiv.innerHTML = repos.map(repo => `
+            reposDiv.innerHTML = repos.map(repo => {
+                const dotColor = langColors[repo.language] || 'var(--accent-color)';
+                return `
                 <div class="gh-repo gh-repo-link" data-url="${repo.html_url}">
                     <div class="gh-repo-name">${repo.name}</div>
                     <div class="gh-repo-desc">${repo.description || 'No description'}</div>
                     <div class="gh-repo-meta">
-                        ${repo.language ? `<span class="gh-lang">● ${repo.language}</span>` : ''}
+                        ${repo.language ? `<span class="gh-lang"><span class="gh-lang-dot" style="background-color: ${dotColor}"></span>${repo.language}</span>` : ''}
                         <span class="gh-stars">⭐ ${repo.stargazers_count}</span>
                     </div>
                 </div>
-            `).join('');
+                `;
+            }).join('');
 
             // Delegated event listener for CSP compliance
             if (ghClickHandler) {
@@ -1029,10 +1048,22 @@ async function initGitHub() {
         }
     }
 
-    updateBtn.addEventListener('click', () => {
-        const username = usernameInput.value.trim();
-        if (username) loadGitHubData(username);
-    });
+    if (usernameInput) {
+        usernameInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const username = usernameInput.value.trim();
+                if (username) loadGitHubData(username);
+            }
+        });
+    }
+
+    if (updateBtn) {
+        updateBtn.addEventListener('click', () => {
+            const username = usernameInput ? usernameInput.value.trim() : '';
+            if (username) loadGitHubData(username);
+        });
+    }
 
     loadGitHubData(savedUsername);
 }
