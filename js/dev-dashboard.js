@@ -17,14 +17,23 @@
         animFrameId: null,
         tempUnit: localStorage.getItem('dev_temp_unit') || 'C', // 'C' or 'F'
         city: localStorage.getItem('dev_weather_city') || 'London',
-        lat: parseFloat(localStorage.getItem('dev_weather_lat')) || 51.5074,
-        lon: parseFloat(localStorage.getItem('dev_weather_lon')) || -0.1278,
+        lat: (() => {
+            const val = localStorage.getItem('dev_weather_lat');
+            const num = parseFloat(val);
+            return (val !== null && !isNaN(num)) ? num : 51.5074;
+        })(),
+        lon: (() => {
+            const val = localStorage.getItem('dev_weather_lon');
+            const num = parseFloat(val);
+            return (val !== null && !isNaN(num)) ? num : -0.1278;
+        })(),
         totalRamGB: parseFloat(localStorage.getItem('dev_total_ram')) || 16,
         cpuCores: parseInt(localStorage.getItem('dev_cpu_cores')) || (navigator.hardwareConcurrency || 8),
         radarZoom: 1.0,
         radarAngle: 0,
         radarLayer: 'rain', // 'rain', 'clouds', 'storm'
         weatherData: null,
+        weatherUnavailable: false,
         telemetry: {
             cpu: 42,
             ram: 28,
@@ -178,29 +187,17 @@
             if (!res.ok) throw new Error('Weather API response not ok');
             const data = await res.json();
             state.weatherData = data;
+            state.weatherUnavailable = false;
             renderWeather(cityName || state.city);
         } catch (err) {
-            console.warn('Dev Dashboard: Weather fetch fallback triggered', err);
-            // High fidelity fallback matching screenshot
-            state.weatherData = {
-                current: {
-                    temperature_2m: 14,
-                    relative_humidity_2m: 88,
-                    wind_speed_10m: 13,
-                    wind_direction_10m: 240,
-                    weather_code: 63,
-                    surface_pressure: 1013,
-                    uv_index: 1
-                }
-            };
+            console.warn('Dev Dashboard: Weather fetch unavailable', err);
+            state.weatherData = null;
+            state.weatherUnavailable = true;
             renderWeather(cityName || state.city);
         }
     }
 
     function renderWeather(cityName) {
-        if (!state.weatherData || !state.weatherData.current) return;
-        const cur = state.weatherData.current;
-
         const iconContainer = document.getElementById('dev-weather-main-icon');
         const stateEl = document.getElementById('dev-weather-state');
         const tempEl = document.getElementById('dev-weather-temp');
@@ -210,7 +207,25 @@
         const uvEl = document.getElementById('dev-uv-index');
         const pressureEl = document.getElementById('dev-pressure-val');
         const cityEl = document.getElementById('dev-city-name');
+        const statusBadge = document.getElementById('dev-weather-badge');
 
+        if (cityEl) cityEl.textContent = cityName || state.city;
+
+        if (state.weatherUnavailable || !state.weatherData || !state.weatherData.current) {
+            if (iconContainer) iconContainer.innerHTML = `<svg class="dev-weather-svg" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="32" cy="32" r="20" stroke="rgba(255,255,255,0.3)"/><line x1="32" y1="22" x2="32" y2="34" stroke="#f59e0b" stroke-linecap="round"/><circle cx="32" cy="42" r="2" fill="#f59e0b"/></svg>`;
+            if (stateEl) stateEl.textContent = 'Weather Unavailable';
+            if (tempEl) tempEl.textContent = '--°';
+            if (humidityEl) humidityEl.textContent = '--%';
+            if (windEl) windEl.textContent = '-- km/h';
+            if (windDirEl) windDirEl.textContent = '--';
+            if (uvEl) uvEl.textContent = '--';
+            if (pressureEl) pressureEl.textContent = '-- hPa';
+            if (statusBadge) statusBadge.textContent = 'RADAR OFFLINE';
+            return;
+        }
+
+        if (statusBadge) statusBadge.textContent = 'LIVE RADAR';
+        const cur = state.weatherData.current;
         const codeInfo = WMO_CODES[cur.weather_code] || { state: 'Rainy', icon: 'rain' };
 
         if (iconContainer) iconContainer.innerHTML = getWeatherSvg(codeInfo.icon);
@@ -516,23 +531,31 @@
             const usedGB = state.usedRamGB !== undefined ? state.usedRamGB.toFixed(1) : ((t.ram / 100) * totalGB).toFixed(1);
             ramStatsEl.textContent = `${usedGB}/${totalGB}GB`;
         }
-
+        
         // GPU
         const gpuPercentEl = document.getElementById('dev-gpu-percent');
         const gpuGaugeEl = document.getElementById('dev-gpu-gauge-fill');
+        const gpuFpsEl = document.getElementById('dev-gpu-fps');
         if (gpuPercentEl) gpuPercentEl.textContent = `${t.gpu}%`;
         if (gpuGaugeEl) {
             const circumference = 163.36;
             gpuGaugeEl.style.strokeDashoffset = circumference - (t.gpu / 100) * circumference;
         }
+        if (gpuFpsEl && state.telemetry.isRealOs) {
+            gpuFpsEl.textContent = `${state.telemetry.fps} FPS (Sim)`;
+        }
 
         // Disk
         const diskPercentEl = document.getElementById('dev-disk-percent');
         const diskGaugeEl = document.getElementById('dev-disk-gauge-fill');
+        const diskStatsEl = document.getElementById('dev-disk-stats');
         if (diskPercentEl) diskPercentEl.textContent = `${t.disk}%`;
         if (diskGaugeEl) {
             const circumference = 163.36;
             diskGaugeEl.style.strokeDashoffset = circumference - (t.disk / 100) * circumference;
+        }
+        if (diskStatsEl && state.telemetry.isRealOs) {
+            diskStatsEl.textContent = 'Simulated';
         }
 
         // Network
@@ -553,12 +576,12 @@
      */
     function drawTelemetrySparklines() {
         drawWaveCanvas('dev-cpu-canvas', state.telemetry.cpuHistory, '#00f0ff', 'rgba(0, 240, 255, 0.2)');
-        drawWaveCanvas('dev-ram-canvas', state.telemetry.ramHistory, '#38bdf8', 'rgba(56, 189, 248, 0.2)');
-        drawGpuBarCanvas('dev-gpu-canvas', state.telemetry.gpuBars);
+        drawWaveCanvas('dev-ram-canvas', state.telemetry.ramHistory, '#00f0ff', 'rgba(0, 240, 255, 0.2)');
+        drawEqualizerCanvas('dev-gpu-canvas', state.telemetry.gpuBars, '#00f0ff');
         drawWaveCanvas('dev-disk-canvas', state.telemetry.diskHistory, '#00f0ff', 'rgba(0, 240, 255, 0.2)');
     }
 
-    function drawWaveCanvas(canvasId, data, strokeColor, fillColor) {
+    function drawWaveCanvas(canvasId, history, strokeColor, fillColor) {
         const canvas = document.getElementById(canvasId);
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
@@ -567,58 +590,48 @@
 
         ctx.clearRect(0, 0, w, h);
 
-        // Base grid lines
-        ctx.strokeStyle = 'rgba(0, 240, 255, 0.08)';
-        ctx.lineWidth = 1;
+        if (!history || history.length < 2) return;
+
+        const step = w / (history.length - 1);
+
+        // Draw fill gradient
         ctx.beginPath();
-        ctx.moveTo(0, h / 2);
-        ctx.lineTo(w, h / 2);
-        ctx.moveTo(0, h - 1);
-        ctx.lineTo(w, h - 1);
-        ctx.stroke();
-
-        if (!data || data.length < 2) return;
-
-        const step = w / (data.length - 1);
-        ctx.beginPath();
-        ctx.moveTo(0, h - (data[0] / 100) * (h - 6) - 3);
-
-        for (let i = 1; i < data.length; i++) {
-            const x = i * step;
-            const y = h - (data[i] / 100) * (h - 6) - 3;
-            const prevX = (i - 1) * step;
-            const prevY = h - (data[i - 1] / 100) * (h - 6) - 3;
-            const cx = (prevX + x) / 2;
-            ctx.bezierCurveTo(cx, prevY, cx, y, x, y);
+        ctx.moveTo(0, h);
+        for (let i = 0; i < history.length; i++) {
+            const val = history[i];
+            const y = h - (val / 100) * (h - 4) - 2;
+            if (i === 0) ctx.lineTo(0, y);
+            else {
+                const prevX = (i - 1) * step;
+                const prevY = h - (history[i - 1] / 100) * (h - 4) - 2;
+                const midX = (prevX + i * step) / 2;
+                ctx.bezierCurveTo(midX, prevY, midX, y, i * step, y);
+            }
         }
-
-        // Fill under curve
         ctx.lineTo(w, h);
-        ctx.lineTo(0, h);
         ctx.closePath();
         ctx.fillStyle = fillColor;
         ctx.fill();
 
-        // Stroke line
+        // Draw line
         ctx.beginPath();
-        ctx.moveTo(0, h - (data[0] / 100) * (h - 6) - 3);
-        for (let i = 1; i < data.length; i++) {
-            const x = i * step;
-            const y = h - (data[i] / 100) * (h - 6) - 3;
-            const prevX = (i - 1) * step;
-            const prevY = h - (data[i - 1] / 100) * (h - 6) - 3;
-            const cx = (prevX + x) / 2;
-            ctx.bezierCurveTo(cx, prevY, cx, y, x, y);
+        for (let i = 0; i < history.length; i++) {
+            const val = history[i];
+            const y = h - (val / 100) * (h - 4) - 2;
+            if (i === 0) ctx.moveTo(0, y);
+            else {
+                const prevX = (i - 1) * step;
+                const prevY = h - (history[i - 1] / 100) * (h - 4) - 2;
+                const midX = (prevX + i * step) / 2;
+                ctx.bezierCurveTo(midX, prevY, midX, y, i * step, y);
+            }
         }
         ctx.strokeStyle = strokeColor;
-        ctx.lineWidth = 1.8;
-        ctx.shadowColor = strokeColor;
-        ctx.shadowBlur = 6;
+        ctx.lineWidth = 1.5;
         ctx.stroke();
-        ctx.shadowBlur = 0;
     }
 
-    function drawGpuBarCanvas(canvasId, bars) {
+    function drawEqualizerCanvas(canvasId, bars, color) {
         const canvas = document.getElementById(canvasId);
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
@@ -631,26 +644,22 @@
         const gap = 3;
         const barWidth = (w - (barCount - 1) * gap) / barCount;
 
-        bars.forEach((val, i) => {
-            const barH = (val / 100) * (h - 4);
+        for (let i = 0; i < barCount; i++) {
+            const barH = (bars[i] / 100) * (h - 4);
             const x = i * (barWidth + gap);
-            const y = h - barH;
+            const y = h - barH - 2;
 
-            const grad = ctx.createLinearGradient(x, y, x, h);
-            grad.addColorStop(0, '#00f0ff');
+            const grad = ctx.createLinearGradient(0, y, 0, h);
+            grad.addColorStop(0, color);
             grad.addColorStop(1, 'rgba(0, 240, 255, 0.15)');
 
             ctx.fillStyle = grad;
             ctx.fillRect(x, y, barWidth, barH);
-
-            // Glow cap
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(x, y, barWidth, 1.5);
-        });
+        }
     }
 
     /**
-     * MAIN ANIMATION LOOP (Optimized for Battery & Performance)
+     * MAIN ANIMATION LOOP (60 FPS)
      */
     let lastTelemetryUpdate = 0;
 
@@ -664,20 +673,18 @@
             state.telemetry.frameCount = 0;
             state.telemetry.lastFrameTime = timestamp;
             const fpsEl = document.getElementById('dev-gpu-fps');
-            if (fpsEl) fpsEl.textContent = `${state.telemetry.fps} FPS`;
+            if (fpsEl) fpsEl.textContent = state.telemetry.isRealOs ? `${state.telemetry.fps} FPS (Sim)` : `${state.telemetry.fps} FPS`;
         }
 
         // Draw radar
         drawRadarCanvas();
 
-        // Update telemetry values every 400ms
+        // Update telemetry values & sparklines every 400ms
         if (timestamp - lastTelemetryUpdate > 400) {
             updateTelemetryValues();
+            drawTelemetrySparklines();
             lastTelemetryUpdate = timestamp;
         }
-
-        // Draw sparklines
-        drawTelemetrySparklines();
 
         state.animFrameId = requestAnimationFrame(animLoop);
     }
@@ -729,7 +736,9 @@
 
         // Global hotkey: '/' to focus dev search
         window.addEventListener('keydown', (e) => {
-            if (state.active && e.key === '/' && document.activeElement !== input && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+            const activeEl = document.activeElement;
+            const isInput = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.isContentEditable);
+            if (state.active && e.key === '/' && !isInput) {
                 e.preventDefault();
                 if (input) input.focus();
             }

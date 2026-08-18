@@ -139,5 +139,6 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
 # Screenshots & Scratch
-*.png
+screenshots/*.png
 scratch/
+dailycosmos-backup-*.json

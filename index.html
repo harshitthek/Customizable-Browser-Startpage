@@ -21,7 +21,6 @@
     <link rel="stylesheet" href="css/style.css">
     <script src="js/dev-dashboard.js" defer></script>
     <script src="js/main.js" defer></script>
-    <script src="js/privacy.js" defer></script>
 </head>
 
 <body data-theme="slate">
@@ -268,6 +267,7 @@
 
                     <div class="dev-search-bar-wrap">
                         <form id="dev-search-form" class="dev-search-pill">
+                            <label for="dev-search-input" class="visually-hidden">Quick Search</label>
                             <span class="search-lens-icon">
                                 <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
                             </span>
@@ -665,7 +665,6 @@
                     <option value="cover">Cover (Fill screen)</option>
                     <option value="contain">Contain (Fit within)</option>
                     <option value="fill">Stretch</option>
-                    <option value="center crop">Center Crop</option>
                 </select>
             </div>
         </div>
