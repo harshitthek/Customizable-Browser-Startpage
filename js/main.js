@@ -200,11 +200,13 @@ function renderLinks() {
         const editBtn = document.createElement('button');
         editBtn.className = 'edit-btn';
         editBtn.title = 'Edit link';
+        editBtn.setAttribute('aria-label', `Edit bookmark ${link.name}`);
         editBtn.textContent = '✏️';
         editBtn.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); openEditModal(index); });
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'delete-btn';
         deleteBtn.title = 'Delete link';
+        deleteBtn.setAttribute('aria-label', `Delete bookmark ${link.name}`);
         deleteBtn.textContent = 'x';
         deleteBtn.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); deleteLink(index, linkItem); });
         linkActions.appendChild(editBtn);
@@ -393,10 +395,11 @@ function initializeInteractiveEffects() {
             targetItem.classList.remove('drag-over');
 
             const targetIndex = parseInt(targetItem.dataset.index, 10);
-            if (draggedIndex === targetIndex || isNaN(draggedIndex)) return;
+            if (isNaN(draggedIndex) || isNaN(targetIndex) || draggedIndex < 0 || draggedIndex >= links.length || targetIndex < 0 || targetIndex >= links.length || draggedIndex === targetIndex) return;
 
             // Reorder array
             const [moved] = links.splice(draggedIndex, 1);
+            if (!moved) return;
             links.splice(targetIndex, 0, moved);
             saveLinks();
             renderLinks();
@@ -468,15 +471,25 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Check elements exist before adding listeners
+    // Name editor with click and keyboard activation
+    function handleNameEdit() {
+        const currentName = localStorage.getItem('username') || "Guest";
+        const newName = prompt("Enter your name:", currentName === "Guest" ? "" : currentName);
+        if (newName !== null && newName.trim() !== "") {
+            safeSetItem('username', newName.trim());
+            if (nameElement) nameElement.textContent = newName.trim();
+            showToast(`👋 Welcome, ${newName.trim()}!`);
+        }
+    }
+
     if (nameElement) {
-        nameElement.addEventListener('click', () => {
-            const currentName = localStorage.getItem('username') || "Guest";
-            const newName = prompt("Enter your name:", currentName === "Guest" ? "" : currentName);
-            if (newName !== null && newName.trim() !== "") {
-                safeSetItem('username', newName.trim());
-                nameElement.textContent = newName.trim();
-                showToast(`👋 Welcome, ${newName.trim()}!`);
+        nameElement.setAttribute('tabindex', '0');
+        nameElement.setAttribute('role', 'button');
+        nameElement.addEventListener('click', handleNameEdit);
+        nameElement.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                handleNameEdit();
             }
         });
     }
@@ -534,11 +547,17 @@ document.addEventListener('DOMContentLoaded', () => {
         closeModal();
     });
 
+    let activeDrawerTrigger = null;
+
     // Function to close all slide panels and drawers
     function closeAllPanels() {
         document.querySelectorAll('.panel.drawer-panel, .panel.slide-panel, .panel#context-menu').forEach(p => p.classList.add('hidden'));
         document.querySelectorAll('.command-btn').forEach(btn => btn.classList.remove('active'));
         if (drawerBackdrop) drawerBackdrop.classList.add('hidden');
+        if (activeDrawerTrigger) {
+            activeDrawerTrigger.focus();
+            activeDrawerTrigger = null;
+        }
     }
 
     // Toggle specific panel and close others
@@ -548,10 +567,23 @@ document.addEventListener('DOMContentLoaded', () => {
         closeAllPanels();
         if (isHidden) {
             panel.classList.remove('hidden');
-            if (triggerBtn) triggerBtn.classList.add('active');
+            if (triggerBtn) {
+                triggerBtn.classList.add('active');
+                activeDrawerTrigger = triggerBtn;
+            }
             if (drawerBackdrop) drawerBackdrop.classList.remove('hidden');
+            const focusable = panel.querySelector('button, input, select, textarea, [tabindex="0"]');
+            if (focusable) focusable.focus();
         }
     }
+
+    // Escape key to close active panel
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            const openPanel = document.querySelector('.panel.drawer-panel:not(.hidden)');
+            if (openPanel) closeAllPanels();
+        }
+    });
 
     if (drawerBackdrop) {
         drawerBackdrop.addEventListener('click', () => {
@@ -634,7 +666,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const val = accentColorInput.value;
             applyAccentColor(val);
             document.body.dataset.theme = 'custom';
-            const hexBadge = document.getElementById('custom-hex-val');
+            safeSetItem('theme', 'custom');
+            safeSetItem('customAccentColor', val);
+            const hexBadge = document.getElementById('accent-hex-value') || document.getElementById('custom-hex-val');
             if (hexBadge) hexBadge.textContent = val.toUpperCase();
         });
     }
@@ -694,7 +728,6 @@ document.addEventListener('DOMContentLoaded', () => {
     initClockSettings();
     initExportImport();
     initSearchEngineSwitcher();
-    initSearchBarEffects();
 });
 
 // === KEYBOARD SHORTCUTS ===
@@ -933,17 +966,21 @@ async function initGitHub() {
                 fetch(`https://api.github.com/users/${username}/repos?sort=updated&per_page=100`)
             ]);
 
-            if (profileRes.status === 403) {
+            if (profileRes.status === 403 || reposRes.status === 403) {
                 throw new Error('403 Forbidden - API Rate Limit');
             }
             if (!profileRes.ok) {
                 throw new Error('User not found');
             }
+            if (!reposRes.ok) {
+                throw new Error('Repositories not found');
+            }
             const profile = await profileRes.json();
-            const allRepos = await reposRes.json();
+            const rawRepos = await reposRes.json();
+            const allRepos = Array.isArray(rawRepos) ? rawRepos : [];
 
             // Find top starred repo overall
-            const topRepo = allRepos.reduce((max, repo) => repo.stargazers_count > (max.stargazers_count || 0) ? repo : max, {});
+            const topRepo = allRepos.reduce((max, repo) => (repo.stargazers_count > (max.stargazers_count || 0) ? repo : max), {});
             
             // Get most recently updated repos excluding the top starred repo if present
             const otherRepos = allRepos.filter(r => r.name !== topRepo.name);
@@ -964,50 +1001,65 @@ async function initGitHub() {
                 Vue: '#41b883'
             };
 
+            const safeAvatar = isValidUrl(profile.avatar_url) ? profile.avatar_url : 'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png';
+            const safeLogin = sanitizeInput(profile.login || '');
+            const safeName = sanitizeInput(profile.name || profile.login || 'Developer');
+            const safeBio = sanitizeInput(profile.bio || 'No bio available');
+            const safeReposCount = parseInt(profile.public_repos, 10) || 0;
+            const safeFollowers = parseInt(profile.followers, 10) || 0;
+            const safeFollowing = parseInt(profile.following, 10) || 0;
+            const safeGists = parseInt(profile.public_gists, 10) || 0;
+
             profileDiv.innerHTML = `
                 <div class="gh-profile-card">
-                    <img src="${profile.avatar_url}" class="gh-avatar" alt="${profile.login}">
+                    <img src="${safeAvatar}" class="gh-avatar" alt="${safeLogin}">
                     <div class="gh-info">
-                        <div class="gh-name">${profile.name || profile.login}</div>
-                        <div class="gh-bio">${profile.bio || 'No bio available'}</div>
+                        <div class="gh-name">${safeName}</div>
+                        <div class="gh-bio">${safeBio}</div>
                     </div>
                 </div>
                 <div class="gh-stats-grid">
                     <div class="gh-stat-box">
-                        <span class="stat-value">${profile.public_repos}</span>
+                        <span class="stat-value">${safeReposCount}</span>
                         <span class="stat-label">Repos</span>
                     </div>
                     <div class="gh-stat-box">
-                        <span class="stat-value">${profile.followers}</span>
+                        <span class="stat-value">${safeFollowers}</span>
                         <span class="stat-label">Followers</span>
                     </div>
                     <div class="gh-stat-box">
-                        <span class="stat-value">${profile.following}</span>
+                        <span class="stat-value">${safeFollowing}</span>
                         <span class="stat-label">Following</span>
                     </div>
                     <div class="gh-stat-box">
-                        <span class="stat-value">${profile.public_gists}</span>
+                        <span class="stat-value">${safeGists}</span>
                         <span class="stat-label">Gists</span>
                     </div>
                 </div>
                 ${topRepo.name && topRepo.stargazers_count > 0 ? `
-                    <div class="gh-top-repo gh-repo-link" data-url="${topRepo.html_url}">
+                    <div class="gh-top-repo gh-repo-link" data-url="${sanitizeInput(topRepo.html_url || '')}">
                         <div class="gh-top-repo-title">⭐ Most Starred</div>
-                        <div class="gh-top-repo-name">${topRepo.name}</div>
-                        <div class="gh-top-repo-stars">${topRepo.stargazers_count} stars</div>
+                        <div class="gh-top-repo-name">${sanitizeInput(topRepo.name)}</div>
+                        <div class="gh-top-repo-stars">${parseInt(topRepo.stargazers_count, 10) || 0} stars</div>
                     </div>
                 ` : ''}
             `;
 
             reposDiv.innerHTML = repos.map(repo => {
-                const dotColor = langColors[repo.language] || 'var(--accent-color)';
+                const safeRepoLang = sanitizeInput(repo.language || '');
+                const dotColor = langColors[safeRepoLang] || 'var(--accent-color)';
+                const safeRepoName = sanitizeInput(repo.name || '');
+                const safeRepoDesc = sanitizeInput(repo.description || 'No description');
+                const safeRepoUrl = sanitizeInput(repo.html_url || '');
+                const safeStars = parseInt(repo.stargazers_count, 10) || 0;
+
                 return `
-                <div class="gh-repo gh-repo-link" data-url="${repo.html_url}">
-                    <div class="gh-repo-name">${repo.name}</div>
-                    <div class="gh-repo-desc">${repo.description || 'No description'}</div>
+                <div class="gh-repo gh-repo-link" data-url="${safeRepoUrl}">
+                    <div class="gh-repo-name">${safeRepoName}</div>
+                    <div class="gh-repo-desc">${safeRepoDesc}</div>
                     <div class="gh-repo-meta">
-                        ${repo.language ? `<span class="gh-lang"><span class="gh-lang-dot" style="background-color: ${dotColor}"></span>${repo.language}</span>` : ''}
-                        <span class="gh-stars">⭐ ${repo.stargazers_count}</span>
+                        ${safeRepoLang ? `<span class="gh-lang"><span class="gh-lang-dot" style="background-color: ${dotColor}"></span>${safeRepoLang}</span>` : ''}
+                        <span class="gh-stars">⭐ ${safeStars}</span>
                     </div>
                 </div>
                 `;
@@ -1167,21 +1219,30 @@ function initBackgroundSettings() {
         });
     });
 
-    // File Upload Handler
+    // File Upload Handler with size validation and safe storage check
     function handleFileUpload(file) {
         if (!file || !file.type.startsWith('image/')) {
             showToast('⚠️ Please choose an image file (JPG, PNG, WebP)');
             return;
         }
+        if (file.size > 2.5 * 1024 * 1024) {
+            showToast('⚠️ Image too large (max 2.5MB for browser storage)');
+            return;
+        }
         const reader = new FileReader();
         reader.onload = (event) => {
-            overlay.style.backgroundImage = `url(${event.target.result})`;
-            safeSetItem('customBg', event.target.result);
-            safeSetItem('wallpaperPreset', 'custom-upload');
-            document.body.classList.add('has-custom-bg');
-            presetCards.forEach(c => c.classList.remove('active'));
-            applyFilters();
-            showToast('📸 Custom wallpaper uploaded!');
+            const dataUrl = event.target.result;
+            try {
+                localStorage.setItem('customBg', dataUrl);
+                localStorage.setItem('wallpaperPreset', 'custom-upload');
+                overlay.style.backgroundImage = `url("${CSS.escape(dataUrl)}")`;
+                document.body.classList.add('has-custom-bg');
+                presetCards.forEach(c => c.classList.remove('active'));
+                applyFilters();
+                showToast('📸 Custom wallpaper uploaded!');
+            } catch (err) {
+                showToast('⚠️ Storage quota exceeded. Image is too large for storage.');
+            }
         };
         reader.readAsDataURL(file);
     }
@@ -1213,12 +1274,16 @@ function initBackgroundSettings() {
         });
     }
 
-    // Custom URL
+    // Custom URL with validation
     if (applyUrlBtn && bgUrlInput) {
         applyUrlBtn.addEventListener('click', () => {
             const url = bgUrlInput.value.trim();
             if (!url) return;
-            overlay.style.backgroundImage = `url(${url})`;
+            if (!isValidUrl(url)) {
+                showToast('⚠️ Please enter a valid HTTP/HTTPS image URL');
+                return;
+            }
+            overlay.style.backgroundImage = `url("${CSS.escape(url)}")`;
             safeSetItem('customBg', url);
             safeSetItem('wallpaperPreset', 'custom-url');
             document.body.classList.add('has-custom-bg');
@@ -1493,8 +1558,10 @@ function initSearchEngineSwitcher() {
         { id: 'youtube', name: 'YouTube', icon: 'https://www.youtube.com/favicon.ico', url: 'https://www.youtube.com/results?search_query=' }
     ];
 
-    let currentIndex = parseInt(localStorage.getItem('searchEngineIndex')) || 0;
-    if (currentIndex >= engines.length) currentIndex = 0;
+    let currentIndex = parseInt(localStorage.getItem('searchEngineIndex'), 10);
+    if (isNaN(currentIndex) || currentIndex < 0 || currentIndex >= engines.length) {
+        currentIndex = 0;
+    }
 
     function updateEngine(index) {
         currentIndex = index;
@@ -1541,6 +1608,18 @@ function initSearchEngineSwitcher() {
         }
     });
 
+    function isLikelyUrl(q) {
+        if (/^https?:\/\/[^\s/$.?#].[^\s]*$/i.test(q)) return true;
+        if (/^[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)+(\/[^\s]*)?$/i.test(q)) {
+            const hostPart = q.split('/')[0];
+            const parts = hostPart.split('.');
+            const tld = parts[parts.length - 1].toLowerCase();
+            const knownTlds = ['com', 'org', 'net', 'io', 'dev', 'app', 'edu', 'gov', 'co', 'ai', 'me', 'info', 'xyz', 'tv', 'uk', 'de', 'ca', 'jp', 'fr', 'in', 'us'];
+            if (knownTlds.includes(tld) || q.includes('/')) return true;
+        }
+        return false;
+    }
+
     // Execute Search
     function executeSearch() {
         if (!mainSearchInput) return;
@@ -1548,7 +1627,7 @@ function initSearchEngineSwitcher() {
         if (!query) return;
 
         // Check if query is direct URL
-        if (query.includes('.') && !query.includes(' ') && (query.startsWith('http://') || query.startsWith('https://') || !query.includes('://'))) {
+        if (isLikelyUrl(query)) {
             const url = query.startsWith('http://') || query.startsWith('https://') ? query : 'https://' + query;
             window.open(url, '_blank');
         } else {
@@ -1616,11 +1695,6 @@ document.addEventListener('click', (e) => {
         document.querySelectorAll('.command-btn').forEach(btn => btn.classList.remove('active'));
     }
 });
-
-// === SEARCH BAR FOCUS EFFECTS ===
-function initSearchBarEffects() {
-    // Handled smoothly via CSS :focus-within
-}
 
 
 

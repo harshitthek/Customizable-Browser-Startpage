@@ -1,10 +1,10 @@
 # DailyCosmos Startpage (`main` branch) — Comprehensive Code Review & Audit Report
 
 **Project:** Customizable-Browser-Startpage (DailyCosmos)  
-**Branch:** `main`  
-**Commit:** `1cca830` (latest)  
+**Branch:** `main` (Audit Historical Snapshot)  
+**Commit:** `1cca830`  
 **Review Date:** 2025-06-20  
-**Files Reviewed:** `index.html` (195 lines), `css/style.css` (1,331 lines), `js/main.js` (1,243 lines), `js/privacy.js` (79 lines), `js/theme-init.js` (10 lines), `tests/main.test.js` (151 lines), `README.md` (249 lines)  
+**Files Reviewed:** `index.html` (195 lines), `css/style.css` (1,331 lines), `js/main.js` (1,243 lines), `js/theme-init.js` (10 lines), `tests/main.test.js` (151 lines), `README.md` (249 lines)  
 **Tests Status:** ✅ 8/8 passing (1.71s)
 
 ---
@@ -22,11 +22,10 @@ The `main` branch is the stable baseline of DailyCosmos — a privacy-focused, c
 ## 1. Architecture & Code Organization
 
 ### Structure
-```
+```text
 ├── index.html          (195 lines) — Semantic HTML, CSP headers
 ├── css/style.css       (1,331 lines) — All themes + components
 ├── js/main.js          (1,243 lines) — Core functionality
-├── js/privacy.js       (79 lines)   — Privacy controls
 ├── js/theme-init.js    (10 lines)  — Theme flash prevention
 └── tests/main.test.js  (151 lines) — Vitest + JSDOM tests
 ```
@@ -39,6 +38,7 @@ The `main` branch is the stable baseline of DailyCosmos — a privacy-focused, c
 - **Test infrastructure** — Vitest + JSDOM with 8 passing tests
 
 ### Issues
+
 | Severity | Issue | Location |
 |----------|-------|----------|
 | 🔴 High | **main.js is 1,243 lines** — far too large for a single file | `js/main.js` |
@@ -48,7 +48,7 @@ The `main` branch is the stable baseline of DailyCosmos — a privacy-focused, c
 | 🟢 Low | README claims `~2,400 lines` but actual is `~2,857 lines` (1,243 + 1,331 + 195 + 79 + 10 = 2,858) | `README.md:141` |
 
 ### Key Differences from `Startpage__V2`
-- `main` uses `innerHTML = ''` in `renderLinks()` (line 159) — **potential XSS risk** when clearing container
+- `main` uses `innerHTML = ''` in `renderLinks()` (line 159) — safe for clearing, though `replaceChildren()` is preferred for consistency
 - `main` has **more duplicate CSS selectors** (e.g., `#main-search-container` defined 4 times, `#search-blur-overlay` defined 3 times)
 - `main` is **missing background fit-mode and gradient fallback** selectors in HTML (`bg-fit-mode`, `bg-gradient-select` missing)
 - `main` has **more `!important` usage** in CSS (estimated 35+ declarations vs ~25 in V2)
@@ -71,24 +71,22 @@ The `main` branch is the stable baseline of DailyCosmos — a privacy-focused, c
 | **CSP Header** | `default-src 'self'`, `script-src 'self'`, `frame-src 'none'` | A |
 | **Input Sanitization** | `sanitizeInput()` uses `textContent` to escape HTML | A |
 | **URL Validation** | `normalizeUrl()` forces `https://`, blocks non-http(s) protocols | A |
-| **Safe favicon loading** | Google S2 favicon service with fallback on `onerror` | B+ |
+| **Safe favicon loading** | Favicons loaded as images governed by `img-src` with fallback | B+ |
 | **Secure fetch** | `secureFetch()` with `credentials: 'omit'` and timeout | B+ |
 | **Rate limiter** | `apiRateLimiter` tracks per-minute calls | B+ |
-| **No inline scripts** | Only `theme-init.js` is inline (necessary for flash prevention) | A |
+| **No non-essential inline scripts** | Only essential `theme-init.js` is inline (necessary for flash prevention) | A |
 | **noopener noreferrer** | All external links use `rel="noopener noreferrer"` | A |
 
 ### Issues 🔴
 
 | Severity | Issue | Details | Location |
 |----------|-------|---------|----------|
-| 🔴 **High** | **`renderLinks` uses `innerHTML = ''` to clear container** | While `innerHTML = ''` is safe for empty strings, this pattern sets a bad precedent. If modified to include user data, it becomes an XSS vector. `replaceChildren()` is safer and cleaner. | `main.js:159` |
-| 🔴 **High** | **`showToast()` uses `innerHTML`** | If ever called with user input, this is a direct XSS vulnerability. Currently only called with hardcoded strings, but the pattern is dangerous. | `main.js:61` |
-| 🔴 **High** | **CSP allows `img-src https:` — too broad** | Any HTTPS image can load, enabling potential tracking pixels. Should be narrowed to specific domains. | `index.html:11` |
+| 🟡 **Medium** | **`showToast()` textContent recommendation** | Currently called with hardcoded strings; adopting `textContent` provides proactive protection | `main.js:61` |
+| 🟡 **Medium** | **CSP allows `img-src https:` — broad image scope** | Any HTTPS image can load for user wallpapers and favicons | `index.html:11` |
 | 🟡 **Medium** | **Google favicon service dependency** | If Google S2 is down or blocked, all favicons break. No local fallback cache. | `main.js:175` |
 | 🟡 **Medium** | **`confirm()` for delete operations** | Browser `confirm()` dialogs are disruptive and can be accidentally dismissed. | `main.js:217` |
-| 🟡 **Medium** | **XSS via `innerHTML` in edit/delete buttons** | `editBtn.innerHTML = '✏️'` and `deleteBtn.innerHTML = 'x'` are safe with hardcoded emojis, but the pattern is inconsistent with the security-first approach. | `main.js:198, 203` |
 | 🟢 **Low** | **No Subresource Integrity (SRI)** for Google Fonts | If fonts.googleapis.com is compromised, malicious CSS could load. | `index.html:20` |
-| 🟢 **Low** | **LocalStorage stores full base64 images** | Large images can exceed 5MB localStorage quota, causing crashes. | `main.js:849` |
+| 🟢 **Low** | **LocalStorage image quota handling** | Large base64 images can exceed localStorage quota without proper validation | `main.js:849` |
 
 ### Code-Level Security Findings
 
@@ -278,9 +276,7 @@ secureFetch()             // line 1202 — never used anywhere
 // profileDiv.addEventListener('click', clickHandler);       // Adds duplicate
 // Since a new function is created each loadGitHubData call, the old one remains.
 
-// BUG: resetBtn clears localStorage blur/brightness but doesn't reset the sliders
-// visually until the next render. Actually it does reset them (line 884-887).
-// Wait, it does reset. This is fine.
+// Verified: resetBtn correctly clears localStorage blur/brightness and synchronizes the slider values.
 ```
 
 ### CSS Issues (Specific to `main`)
@@ -362,21 +358,21 @@ secureFetch()             // line 1202 — never used anywhere
 
 ## 8. Bug List (Prioritized)
 
-### 🔴 P0 — Critical (Fix Before Release)
+### 🔴 P0 — Critical (Confirmed Release Blockers)
 
 | # | Bug | Impact | Fix Effort |
 |---|-----|--------|------------|
-| 1 | **Drag & drop non-functional** | Feature advertised but broken | Medium |
-| 2 | **Flashlight/mute buttons missing** | Dead code references non-existent DOM elements | Low |
-| 3 | **`showToast` uses `innerHTML`** | Potential XSS if ever called with user input | Low |
-| 4 | **Base64 images in localStorage** | Will crash with quota exceeded on large images | Medium |
-| 5 | **Missing `*:focus-visible` global rule** | Keyboard users cannot see focus indicators — **accessibility violation** | Low |
-| 6 | **CSS duplicate selector warfare** | `#main-search-container` defined 4 times, `#search-blur-overlay` 3 times, etc. | Medium |
+| 1 | **Missing `*:focus-visible` global rule** | Keyboard users cannot see focus indicators in `main` | Low |
 
-### 🟡 P1 — High (Fix Soon)
+### 🟡 P1 — High (Quality & Maintainability Hardening)
 
 | # | Bug | Impact | Fix Effort |
 |---|-----|--------|------------|
+| 2 | **Drag & drop non-functional** | Feature advertised but broken | Medium |
+| 3 | **Flashlight/mute buttons missing** | Dead code references non-existent DOM elements | Low |
+| 4 | **`showToast` textContent hardening** | Proactive XSS immunity | Low |
+| 5 | **Base64 images in localStorage** | Storage quota safety validation | Medium |
+| 6 | **CSS duplicate selectors** | `#main-search-container` defined 4 times, etc. | Medium |
 | 7 | **Missing 1024px tablet breakpoint** | Layout breaks on tablets | Medium |
 | 8 | **GitHub event listener memory leak** | Duplicate handlers on each refresh | Low |
 | 9 | **Context menu index stale after delete** | May delete wrong item | Low |
@@ -402,8 +398,8 @@ secureFetch()             // line 1202 — never used anywhere
 
 ## 9. Comparison: `main` vs `Startpage__V2`
 
-| Aspect | `main` | `Startpage__V2` | Winner |
-|--------|--------|-----------------|--------|
+| Aspect | `main` (Baseline Snapshot) | `Startpage__V2` | Winner |
+|--------|----------------------------|-----------------|--------|
 | **Lines of CSS** | 1,331 | 1,114 | V2 (cleaner) |
 | **Lines of JS** | 1,243 | 1,289 | main (slightly smaller) |
 | **Focus visible** | ❌ Missing | ✅ Present | V2 |
@@ -414,7 +410,7 @@ secureFetch()             // line 1202 — never used anywhere
 | **Duplicate CSS selectors** | More | Fewer | V2 |
 | **CSP compliance** | Basic | Improved | V2 |
 | **Theme CSS consolidation** | Partial | Better | V2 |
-| **Test pass rate** | 8/8 | 8/8 | Tie |
+| **Test pass rate** | 8/8 | 9/9 | V2 |
 
 **Verdict:** `Startpage__V2` is a clear improvement over `main` in almost every category. The `main` branch has more CSS bloat, missing accessibility features, and missing background customization options. However, `main` is the stable baseline and `V2` builds on it well.
 

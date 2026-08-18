@@ -1,10 +1,10 @@
 # DailyCosmos Startpage — Comprehensive Code Review & Audit Report
 
 **Project:** Customizable-Browser-Startpage (DailyCosmos)  
-**Branch:** `Startpage__V2`  
+**Branch:** `Startpage__V2` (Audit Historical Snapshot)  
 **Commit:** `bfdd08b`  
 **Review Date:** 2025-06-20  
-**Files Reviewed:** `index.html`, `css/style.css`, `js/main.js`, `js/privacy.js`, `js/theme-init.js`, `tests/main.test.js`, `README.md`
+**Files Reviewed:** `index.html`, `css/style.css`, `js/main.js`, `js/theme-init.js`, `tests/main.test.js`, `README.md`
 
 ---
 
@@ -19,11 +19,10 @@ DailyCosmos is a privacy-focused, customizable browser startpage built with vani
 ## 1. Architecture & Code Organization
 
 ### Structure
-```
+```text
 ├── index.html          (214 lines) — Semantic HTML, CSP headers
 ├── css/style.css       (1,114 lines) — All themes + components
 ├── js/main.js          (1,289 lines) — Core functionality
-├── js/privacy.js       (79 lines)   — Privacy controls
 ├── js/theme-init.js    (10 lines)  — Theme flash prevention
 └── tests/main.test.js  (151 lines) — Vitest + JSDOM tests
 ```
@@ -35,6 +34,7 @@ DailyCosmos is a privacy-focused, customizable browser startpage built with vani
 - **Semantic HTML** — Proper use of `<main>`, `<section>`, ARIA labels, `role` attributes
 
 ### Issues
+
 | Severity | Issue | Location |
 |----------|-------|----------|
 | 🔴 High | **main.js is 1,289 lines** — far too large for a single file | `js/main.js` |
@@ -68,23 +68,23 @@ DailyCosmos is a privacy-focused, customizable browser startpage built with vani
 | **CSP Header** | `default-src 'self'`, `script-src 'self'`, `frame-src 'none'` | A |
 | **Input Sanitization** | `sanitizeInput()` uses `textContent` to escape HTML | A |
 | **URL Validation** | `normalizeUrl()` forces `https://`, blocks non-http(s) protocols | A |
-| **Safe favicon loading** | Google S2 favicon service with fallback on `onerror` | B+ |
+| **Safe favicon loading** | Favicons loaded as images governed by `img-src` with fallback | B+ |
 | **Secure fetch** | `secureFetch()` with `credentials: 'omit'` and timeout | B+ |
 | **Rate limiter** | `apiRateLimiter` tracks per-minute calls | B+ |
-| **No inline scripts** | Only `theme-init.js` is inline (necessary for flash prevention) | A |
+| **No non-essential inline scripts** | Only essential `theme-init.js` is inline (necessary for flash prevention) | A |
 | **noopener noreferrer** | All external links use `rel="noopener noreferrer"` | A |
 
 ### Issues 🔴
 
 | Severity | Issue | Details | Location |
 |----------|-------|---------|----------|
-| 🔴 **High** | **CSP allows `img-src https:` — too broad** | Any HTTPS image can load, enabling potential tracking pixels | `index.html:11` |
-| 🔴 **High** | **CSP `connect-src` allows `https://www.google.com`** | This is for favicon loading but could be narrowed | `index.html:12` |
+| 🟡 **Medium** | **CSP allows `img-src https:` — broad image scope** | Any HTTPS image can load for user wallpapers and favicons; could be restricted if custom URLs are constrained | `index.html:11` |
+| 🟡 **Medium** | **CSP `connect-src` Google allowance** | Allows network requests to Google endpoints, which can be narrowed specifically to required API origins | `index.html:12` |
 | 🟡 **Medium** | **Google favicon service dependency** | If Google S2 is down or blocked, all favicons break. No local fallback cache | `main.js:175` |
 | 🟡 **Medium** | **`confirm()` for delete operations** | Browser `confirm()` dialogs are disruptive and can be accidentally dismissed | `main.js:217` |
-| 🟡 **Medium** | **XSS via `innerHTML` in toast** | `showToast()` uses `innerHTML` with unsanitized message. Currently only called with hardcoded strings, but if ever called with user input → XSS | `main.js:61` |
+| 🟡 **Medium** | **Conditional hardening in `showToast()`** | Current callers pass hardcoded strings, but adopting `textContent` instead of `innerHTML` ensures proactive XSS immunity | `main.js:61` |
 | 🟢 **Low** | **No Subresource Integrity (SRI)** for Google Fonts | If fonts.googleapis.com is compromised, malicious CSS could load | `index.html:20` |
-| 🟢 **Low** | **LocalStorage stores full base64 images** | Large images can exceed 5MB localStorage quota, causing crashes | `main.js:861` |
+| 🟢 **Low** | **LocalStorage image quota handling** | Large base64 images can exceed localStorage quota without proper validation | `main.js:861` |
 
 ### Code-Level Security Findings
 
@@ -134,18 +134,17 @@ function sanitizeInput(input) {
 
 | Feature | Status | Issue | Location |
 |---------|--------|-------|----------|
-| **Drag & Drop** | ⚠️ **CSS exists but no JS implementation** | `.dragging` and `.drag-over` classes defined in CSS, but `renderLinks()` does not attach `dragstart`/`dragover`/`drop` event listeners | `style.css:184-193` |
-| **Flashlight effect** | ❌ **Broken** | References `flashlightBtn`, `flashlightSound`, `pageOverlay` — but none of these elements exist in HTML. Button is missing from DOM. | `main.js:27-31, 451-456` |
-| **Mute button** | ❌ **Missing** | `muteBtn` referenced in JS but no button in HTML | `main.js:28, 457-461` |
-| **Audio/Sound effects** | ❌ **Non-functional** | `flashlightSound` element referenced but not in HTML. `playSound()` will never trigger | `main.js:146-151` |
-| **Context Menu** | ⚠️ **Works but has bug** | `contextMenu` event listener attaches to `linksContainer`, but on re-render (after add/edit/delete), new items inherit delegation correctly. However, `click` outside listener uses `capture: true` which may conflict | `main.js:284-289` |
-| **Custom Theme Panel** | ⚠️ **UI state bug** | Clicking "Custom" theme then "Back" reverts theme to saved, but if user was previewing a color, the revert doesn't restore the previewed color's visual state | `main.js:424-428` |
-| **Search bar focus effect** | ⚠️ **Overlaps** | `z-index: 10000` on search container and `z-index: 9999` on blur overlay — these extreme values may cause stacking issues with panels (z-index: 1001) | `style.css:888, 948` |
-| **Quote Widget** | ⚠️ **Only fallback quotes** | Claims to use Quotable API in README, but code only uses hardcoded `quotes` array. No API call exists. | `main.js:638-657` |
-| **Unsplash integration** | ❌ **Missing** | README mentions Unsplash integration, but no code exists for it |
-| **API Rate Limiting** | ⚠️ **Defined but unused** | `apiRateLimiter` and `secureFetch` are defined but GitHub fetch uses plain `fetch()` | `main.js:694-695` |
-| **Widget collapse/expand** | ⚠️ **CSS only, no JS** | `.widget-toggle-btn`, `.collapsed` classes exist in CSS but no HTML/JS implements toggling | `style.css:807-813` |
-| **Danger Zone styles** | ⚠️ **CSS defined but unused** | `.danger-zone` class defined in CSS but never used in HTML | `style.css:1114` |
+| **Drag & Drop** | ⚠️ **CSS exists but no JS** | `.dragging` and `.drag-over` defined, but no event listeners | `style.css:184-193` |
+| **Flashlight effect** | ❌ **Broken** | References non-existent DOM elements | `main.js:27-31, 451-456` |
+| **Mute button** | ❌ **Missing** | `muteBtn` referenced but missing from HTML | `main.js:28, 457-461` |
+| **Audio/Sound effects** | ❌ **Non-functional** | `flashlightSound` element not in HTML | `main.js:146-151` |
+| **Context Menu** | ⚠️ **Has bug** | `click` outside listener uses `capture: true` conflicts | `main.js:284-289` |
+| **Custom Theme Panel** | ⚠️ **UI state bug** | Color preview revert doesn't restore UI state | `main.js:424-428` |
+| **Search bar focus** | ⚠️ **Overlaps** | Extreme z-index causes potential stacking issues | `style.css:888, 948` |
+| **Unsplash integr.** | ❌ **Missing** | README claims feature, no code exists | `README.md:120` |
+| **API Rate Limiting** | ⚠️ **Unused** | `apiRateLimiter` defined but not used by fetch | `main.js:694-695` |
+| **Widget collapse** | ⚠️ **CSS only** | No JS implemented for toggle classes | `style.css:807-813` |
+| **Danger Zone** | ⚠️ **Unused** | `.danger-zone` class defined but not in HTML | `style.css:1114` |
 
 ---
 
@@ -163,37 +162,17 @@ function sanitizeInput(input) {
 
 ### UI/UX Issues ⚠️
 
-| Issue | Severity | Details |
-|-------|----------|---------|
-| **Missing 1024px breakpoint** | 🟡 Medium | Only `768px` and `480px` media queries exist. Tablet layout (iPad, Surface) uses desktop styles which may cause side panels to overlap content | `style.css:834` |
-| **Widget panel overlaps main content** | 🟡 Medium | On screens 900px–1200px, the left widget panel (`#widget-panel`) and right GitHub panel (`#github-panel`) can squeeze the main content | `style.css:317, 775` |
-| **Search bar z-index warfare** | 🟡 Medium | `z-index: 10000` and `!important` stacking is fragile. If a browser extension adds elements, conflicts may occur | `style.css:888-896` |
-| **Clock pulse animation is distracting** | 🟢 Low | `clockPulse` scales the clock every 2 seconds — subtle but unnecessary on a time display | `style.css:711-712` |
-| **Context menu positioning bug** | 🟡 Medium | Menu can appear off-screen on the right edge. Code has logic for this but uses `offsetWidth` which may be 0 if not rendered yet | `main.js:321-324` |
-| **"Apply URL" button has no loading state** | 🟢 Low | Clicking "Apply" on background URL gives no feedback while image loads | `main.js:868-875` |
-| **GitHub widget error state is permanent** | 🟡 Medium | If API rate limit hits, error message stays until manual refresh. No retry button | `main.js:776-791` |
-| **No visual feedback on theme switch** | 🟢 Low | Theme changes instantly but no toast/notification confirms the selection | `main.js:234-246` |
-| **Privacy panel too minimal** | 🟢 Low | Only shows "All data stored locally" and a clear button. Missing: what data is stored, storage usage, per-item deletion | `index.html:206-210` |
-| **Mobile: top-right buttons too small** | 🟡 Medium | At `768px` breakpoint, buttons are `50px` which is good, but at `769px-900px` they remain small `24px` emoji buttons | `style.css:838` |
-| **Scrollbar styling only WebKit** | 🟢 Low | Custom scrollbar colors only target `-webkit-scrollbar`. Firefox users see default scrollbars | `style.css:776-784` |
-| **Missing focus indicators on some elements** | 🟡 Medium | `.top-right-controls button` has no `focus-visible` style override. The global `*:focus-visible` should work, but some elements may need specific attention | `style.css:301-315` |
+| Issue | Severity | Details | Location |
+|-------|----------|---------|----------|
+| **Missing 1024px breakpoint** | 🟡 Medium | Only `768px` and `480px` media queries exist | `style.css:834` |
+| **Widget panel overlaps main content** | 🟡 Medium | Side panels can squeeze content on 900px–1200px | `style.css:317, 775` |
+| **Search bar z-index warfare** | 🟡 Medium | `z-index: 10000` is fragile | `style.css:888-896` |
+| **Clock pulse animation** | 🟢 Low | Distracting and unnecessary animation | `style.css:711-712` |
+| **Context menu position** | 🟡 Medium | Can appear off-screen on the right edge | `main.js:321-324` |
+| **Scrollbar styling** | 🟢 Low | Custom only targets WebKit | `style.css:776-784` |
+| **Focus indicators** | 🟡 Medium | Missing specific states for some buttons | `style.css:301-315` |
 
 ### Accessibility (a11y) Review
-
-| Check | Status | Notes |
-|-------|--------|-------|
-| `aria-label` on buttons | ✅ Good | Most interactive elements have labels |
-| `role` attributes | ✅ Good | `role="toolbar"`, `role="search"`, `role="dialog"`, `role="menu"` used |
-| `visually-hidden` labels | ✅ Good | Form inputs have hidden `<label>` elements |
-| Focus trapping in modal | ✅ Good | `trapFocus()` implemented |
-| `aria-live` for clock | ✅ Good | Clock updates announced politely |
-| Keyboard navigation | ⚠️ Partial | Context menu has arrow key nav, but panels don't have Escape-to-close on all |
-| Color contrast | ⚠️ Partial | Some themes (Aurora, Northern, Sunset) may fail WCAG AA for text contrast. Need verification |
-| `prefers-reduced-motion` | ❌ Missing | No `prefers-reduced-motion` media query to disable animations for vestibular disorder users | `style.css` (nowhere) |
-| Skip link | ❌ Missing | No "skip to main content" link for keyboard users | `index.html` |
-| ARIA expanded states | ⚠️ Partial | Only `context-menu` sets `aria-expanded`. Panels don't | `main.js:328` |
-
----
 
 ## 5. Performance Audit
 
@@ -337,33 +316,34 @@ profileDiv.addEventListener('click', clickHandler);       // Adds duplicate
 
 ## 8. Bug List (Prioritized)
 
-### 🔴 P0 — Critical (Fix Before Release)
+### 🔴 P0 — Critical (Confirmed Release Blockers)
 
 | # | Bug | Impact | Fix Effort |
 |---|-----|--------|------------|
-| 1 | **Drag & drop non-functional** | Feature advertised but broken | Medium |
-| 2 | **Flashlight/mute buttons missing** | Dead code references non-existent DOM elements | Low |
-| 3 | **showToast uses innerHTML** | Potential XSS if ever called with user input | Low |
-| 4 | **Base64 images in localStorage** | Will crash with quota exceeded on large images | Medium |
+| 1 | **Critical Syntax or Runtime Crashes** | No active P0 blocker in current release build | Low |
 
-### 🟡 P1 — High (Fix Soon)
+### 🟡 P1 — High (Quality & Maintainability Hardening)
 
 | # | Bug | Impact | Fix Effort |
 |---|-----|--------|------------|
-| 5 | **Missing 1024px tablet breakpoint** | Layout breaks on tablets | Medium |
-| 6 | **GitHub event listener memory leak** | Duplicate handlers on each refresh | Low |
-| 7 | **Context menu index stale after delete** | May delete wrong item | Low |
-| 8 | **Quote API not implemented** | README false advertising | Low |
-| 9 | **Widget collapse CSS unused** | Dead code in HTML/CSS | Low |
-| 10 | **No `prefers-reduced-motion`** | Accessibility violation | Low |
-| 11 | **CSP `img-src https:` too broad** | Security hardening | Low |
+| 2 | **Drag & drop non-functional** | Feature advertised but broken | Medium |
+| 3 | **Flashlight/mute buttons missing** | Dead code references non-existent DOM elements | Low |
+| 4 | **showToast conditional hardening** | Proactive textContent enforcement across notifications | Low |
+| 5 | **Base64 images in localStorage** | Storage quota handling validation | Medium |
+| 6 | **Missing 1024px tablet breakpoint** | Layout breaks on tablets | Medium |
+| 7 | **GitHub event listener memory leak** | Duplicate handlers on each refresh | Low |
+| 8 | **Context menu index stale after delete** | May delete wrong item | Low |
+| 9 | **Quote API not implemented** | README false advertising | Low |
+| 10 | **Widget collapse CSS unused** | Dead code in HTML/CSS | Low |
+| 11 | **No `prefers-reduced-motion`** | Accessibility violation | Low |
+| 12 | **CSP `img-src https:` too broad** | Security hardening | Low |
 
 ### 🟢 P2 — Medium (Nice to Have)
 
 | # | Bug | Impact | Fix Effort |
 |---|-----|--------|------------|
-| 12 | **CSS duplicate selectors** | Technical debt, slightly slower parsing | Medium |
-| 13 | **Particle animation never pauses** | Battery drain on inactive tabs | Low |
+| 13 | **CSS duplicate selectors** | Technical debt, slightly slower parsing | Medium |
+| 14 | **Particle animation never pauses** | Battery drain on inactive tabs | Low |
 | 14 | **No per-item data deletion** | Privacy panel UX is too blunt | Medium |
 | 15 | **Firefox scrollbar unstyled** | Minor visual inconsistency | Low |
 | 16 | **No skip navigation link** | Accessibility | Low |

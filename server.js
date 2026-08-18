@@ -3,7 +3,8 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-const PORT = 3000;
+const PORT = parseInt(process.env.PORT, 10) || 3000;
+const HOST = '127.0.0.1';
 const MIME_TYPES = {
     '.html': 'text/html',
     '.css': 'text/css',
@@ -38,12 +39,11 @@ function getCpuUsage() {
 }
 
 const server = http.createServer(async (req, res) => {
-    // Enable CORS
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    const parsedUrl = new URL(req.url, `http://${req.headers.host || '127.0.0.1'}`);
+    const requestPath = parsedUrl.pathname;
 
     // Real System Telemetry API endpoint
-    if (req.url === '/api/system') {
+    if (requestPath === '/api/system') {
         const totalMem = os.totalmem();
         const freeMem = os.freemem();
         const usedMem = totalMem - freeMem;
@@ -70,11 +70,18 @@ const server = http.createServer(async (req, res) => {
         return;
     }
 
-    // Static file serving
-    let reqPath = req.url.split('?')[0];
-    if (reqPath === '/' || reqPath === '') reqPath = '/index.html';
+    // Static file serving with path traversal hardening
+    let reqPath = requestPath === '/' || requestPath === '' ? '/index.html' : requestPath;
+    const safePath = path.normalize(reqPath).replace(/^(\.\.[\/\\])+/, '');
+    const filePath = path.resolve(__dirname, '.' + safePath);
 
-    const filePath = path.join(__dirname, reqPath);
+    // Verify resolved path stays strictly within serving root
+    if (!filePath.startsWith(__dirname)) {
+        res.writeHead(403, { 'Content-Type': 'text/plain' });
+        res.end('403 Forbidden');
+        return;
+    }
+
     const ext = path.extname(filePath).toLowerCase();
     const contentType = MIME_TYPES[ext] || 'application/octet-stream';
 
@@ -94,6 +101,6 @@ const server = http.createServer(async (req, res) => {
     });
 });
 
-server.listen(PORT, () => {
-    console.log(`DailyCosmos server with Real OS Telemetry running on http://localhost:${PORT}`);
+server.listen(PORT, HOST, () => {
+    console.log(`DailyCosmos server running on http://${HOST}:${PORT}`);
 });

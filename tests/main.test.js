@@ -52,7 +52,7 @@ describe('DailyCosmos UI and Core Logic', () => {
                 createConicGradient: function() { return gradMock; }
             };
         };
-        window.requestAnimationFrame = function(callback) { return setTimeout(callback, 0); };
+        window.requestAnimationFrame = function(callback) { return setTimeout(() => callback(performance.now()), 0); };
         window.cancelAnimationFrame = function(id) { clearTimeout(id); };
         window.fetch = window.fetch || function() {
             return Promise.resolve({
@@ -179,22 +179,28 @@ describe('DailyCosmos UI and Core Logic', () => {
         const { document, window } = setupDOM();
         window.eval(devJs);
 
-        const devThemeBtn = document.querySelector('.theme-option[data-theme="dev"]');
-        expect(devThemeBtn).toBeTruthy();
-        devThemeBtn.click();
+        try {
+            const devThemeBtn = document.querySelector('.theme-option[data-theme="dev"]');
+            expect(devThemeBtn).toBeTruthy();
+            devThemeBtn.click();
 
-        expect(document.body.dataset.theme).toBe('dev');
-        expect(window.localStorage.getItem('savedTheme')).toBe('dev');
+            expect(document.body.dataset.theme).toBe('dev');
+            expect(window.localStorage.getItem('savedTheme')).toBe('dev');
 
-        // Check essential Dev Dashboard elements
-        expect(document.getElementById('dev-dashboard-view')).toBeTruthy();
-        expect(document.getElementById('dev-clock-time')).toBeTruthy();
-        expect(document.getElementById('dev-clock-date')).toBeTruthy();
-        expect(document.getElementById('dev-radar-canvas')).toBeTruthy();
-        expect(document.getElementById('dev-weather-widget')).toBeTruthy();
-        expect(document.getElementById('dev-telemetry-widget')).toBeTruthy();
-        expect(document.getElementById('dev-search-widget')).toBeTruthy();
-        expect(document.getElementById('dev-search-input')).toBeTruthy();
-        expect(document.querySelectorAll('.dev-badge').length).toBeGreaterThanOrEqual(5);
+            // Check essential Dev Dashboard elements
+            expect(document.getElementById('dev-dashboard-view')).toBeTruthy();
+            expect(document.getElementById('dev-clock-time')).toBeTruthy();
+            expect(document.getElementById('dev-clock-date')).toBeTruthy();
+            expect(document.getElementById('dev-radar-canvas')).toBeTruthy();
+            expect(document.getElementById('dev-weather-widget')).toBeTruthy();
+            expect(document.getElementById('dev-telemetry-widget')).toBeTruthy();
+            expect(document.getElementById('dev-search-widget')).toBeTruthy();
+            expect(document.getElementById('dev-search-input')).toBeTruthy();
+            expect(document.querySelectorAll('.dev-badge').length).toBeGreaterThanOrEqual(5);
+        } finally {
+            if (window.DevDashboard && typeof window.DevDashboard.stop === 'function') {
+                window.DevDashboard.stop();
+            }
+        }
     });
 });
