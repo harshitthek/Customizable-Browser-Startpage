@@ -10,60 +10,14 @@
  * Called on page load from main.js
  */
 function initPrivacyControls() {
-    // Get DOM elements
-    const privacyBtn = document.getElementById('privacy-btn');
+    // Controls are unified in main.js
     const privacyPanel = document.getElementById('privacy-panel');
-    const clearAllBtn = document.getElementById('clear-all-data-btn');
+    if (!privacyPanel) return;
+}
 
-    // Guard clause: exit if elements don't exist
-    if (!privacyBtn || !privacyPanel) {
-        console.warn('Privacy panel elements not found');
-        return;
-    }
-
-    // ========================================
-    // Toggle Privacy Panel
-    // ========================================
-    privacyBtn.addEventListener('click', () => {
-        // Toggle visibility of privacy panel
-        privacyPanel.classList.toggle('hidden');
-
-        // Close other panels when opening privacy panel
-        document.querySelectorAll('.panel:not(#privacy-panel)').forEach(panel => {
-            panel.classList.add('hidden');
-        });
-    });
-
-    // ========================================
-    // Clear All Data Handler
-    // ========================================
-    if (clearAllBtn) {
-        clearAllBtn.addEventListener('click', () => {
-            // Double confirmation to prevent accidental data loss
-            const confirmed = confirm(
-                '⚠️ WARNING: This will delete ALL your data including:\\n' +
-                '• Bookmarks\\n' +
-                '• Settings\\n' +
-                '• Themes\\n' +
-                '• Background preferences\\n\\n' +
-                'This action cannot be undone. Continue?'
-            );
-
-            if (confirmed) {
-                // Final confirmation
-                const doubleConfirm = confirm('Are you absolutely sure? This cannot be undone!');
-
-                if (doubleConfirm) {
-                    // Clear all localStorage data
-                    localStorage.clear();
-
-                    // Notify user and reload
-                    alert('✅ All data has been cleared. Page will now reload.');
-                    window.location.reload();
-                }
-            }
-        });
-    }
+// Export for compatibility
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { initPrivacyControls };
 }
 
 // ========================================
