@@ -2,6 +2,10 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { JSDOM } from 'jsdom';
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const htmlPath = path.resolve(__dirname, '../index.html');
 const html = fs.readFileSync(htmlPath, 'utf8');
