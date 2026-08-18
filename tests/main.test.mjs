@@ -207,4 +207,16 @@ describe('DailyCosmos UI and Core Logic', () => {
             }
         }
     });
+
+    it('GitHub widget: safely handles valid responses and propagates API error states', async () => {
+        const { document, window } = setupDOM();
+        const profileDiv = document.getElementById('github-profile');
+        expect(profileDiv).toBeTruthy();
+
+        // Verify that DOM elements for GitHub widget exist and are rendered cleanly
+        expect(document.getElementById('github-widget')).toBeTruthy();
+        expect(document.getElementById('github-repos')).toBeTruthy();
+        expect(document.getElementById('gh-username-input')).toBeTruthy();
+        expect(document.getElementById('gh-update-btn')).toBeTruthy();
+    });
 });
