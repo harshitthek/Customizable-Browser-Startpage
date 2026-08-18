@@ -86,18 +86,37 @@ function trapFocus(element, e) {
 }
 
 function setDate() {
+    if (!dateElement) return;
     const now = new Date();
-    const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-    if (dateElement) dateElement.textContent = now.toLocaleDateString(undefined, dateOptions);
+    const format = localStorage.getItem('dateFormat') || 'full';
+    
+    if (format === 'short') {
+        const options = { weekday: 'short', month: 'short', day: 'numeric' };
+        dateElement.textContent = now.toLocaleDateString(undefined, options);
+    } else if (format === 'iso') {
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        dateElement.textContent = `${year}-${month}-${day}`;
+    } else {
+        // Default: full
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        dateElement.textContent = now.toLocaleDateString(undefined, options);
+    }
 }
 
 function updateClock() {
     const clockElement = document.getElementById('clock');
     if (!clockElement) return;
 
+    const savedFont = localStorage.getItem('clockFont');
+    if (savedFont) {
+        clockElement.style.fontFamily = savedFont;
+    }
+
     const now = new Date();
     const use24Hr = localStorage.getItem('clock24hr') === 'true';
-    const showSeconds = localStorage.getItem('clockSeconds') !== 'false'; // default true
+    const showSeconds = localStorage.getItem('clockSeconds') !== 'false';
 
     let hours = now.getHours();
     let minutes = now.getMinutes();
@@ -122,12 +141,10 @@ function updateClock() {
 
 function updateGreeting() {
     const now = new Date();
-    // Compute greeting
     const hour = now.getHours();
     const greetingText = hour < 12 ? "Good morning, "
         : hour < 18 ? "Good afternoon, "
             : "Good evening, ";
-    // Safer update: find the first TEXT_NODE child and change it
     if (greetingElement) {
         const textNode = Array.from(greetingElement.childNodes)
             .find(node => node.nodeType === Node.TEXT_NODE);
@@ -224,6 +241,12 @@ function applyTheme(theme) {
     }
     document.body.dataset.theme = theme;
     safeSetItem('savedTheme', theme);
+
+    // Update active class on swatch cards
+    document.querySelectorAll('.theme-swatch-card').forEach(card => {
+        card.classList.toggle('active', card.dataset.theme === theme);
+    });
+
     // Apply custom accent color if custom theme is active
     if (theme === 'custom') {
         const savedAccent = localStorage.getItem('customAccentColor');
@@ -252,6 +275,19 @@ function openEditModal(index) {
     if (modalSubmitBtn) modalSubmitBtn.textContent = 'Save Changes';
     if (linkNameInput) linkNameInput.value = link.name;
     if (linkUrlInput) linkUrlInput.value = link.url;
+    
+    const previewImg = document.getElementById('modal-favicon-img');
+    const previewName = document.getElementById('modal-preview-name');
+    if (previewName) previewName.textContent = link.name;
+    if (previewImg) {
+        try {
+            const parsed = new URL(link.url);
+            previewImg.src = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(parsed.hostname)}&sz=128`;
+        } catch {
+            previewImg.src = 'https://www.google.com/s2/favicons?domain=example.com&sz=128';
+        }
+    }
+
     if (addLinkModal) addLinkModal.classList.remove('hidden');
     setTimeout(() => { if (linkNameInput) linkNameInput.focus(); }, 50);
 }
@@ -379,21 +415,83 @@ function initializeInteractiveEffects() {
 
 // --- Event Listeners (Attached Once on DOMContentLoaded) ---
 document.addEventListener('DOMContentLoaded', () => {
-    // Check elements exist before adding listeners
-    if (nameElement) nameElement.addEventListener('click', () => {
-        const currentName = localStorage.getItem('username') || "Guest";
-        const newName = prompt("Enter a new name:", currentName === "Guest" ? "" : currentName);
-        if (newName && newName.trim() !== "") { safeSetItem('username', newName.trim()); nameElement.textContent = newName.trim(); }
+    const drawerBackdrop = document.getElementById('drawer-backdrop');
+
+    // Live Favicon Preview & Autocomplete in Bookmark Modal
+    function updateBookmarkPreview() {
+        const urlVal = linkUrlInput ? linkUrlInput.value.trim() : '';
+        const nameVal = linkNameInput ? linkNameInput.value.trim() : '';
+        const previewImg = document.getElementById('modal-favicon-img');
+        const previewName = document.getElementById('modal-preview-name');
+
+        if (previewName) {
+            previewName.textContent = nameVal || 'New Bookmark';
+        }
+
+        if (previewImg) {
+            try {
+                let testUrl = urlVal;
+                if (!testUrl.startsWith('http://') && !testUrl.startsWith('https://')) {
+                    testUrl = 'https://' + testUrl;
+                }
+                const parsed = new URL(testUrl);
+                if (parsed.hostname && parsed.hostname.includes('.')) {
+                    previewImg.src = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(parsed.hostname)}&sz=128`;
+                    if (!nameVal && linkNameInput) {
+                        const raw = parsed.hostname.replace(/^www\./, '').split('.')[0];
+                        if (raw) {
+                            linkNameInput.value = raw.charAt(0).toUpperCase() + raw.slice(1);
+                            if (previewName) previewName.textContent = linkNameInput.value;
+                        }
+                    }
+                }
+            } catch {
+                previewImg.src = 'https://www.google.com/s2/favicons?domain=example.com&sz=128';
+            }
+        }
+    }
+
+    if (linkUrlInput) {
+        linkUrlInput.addEventListener('input', updateBookmarkPreview);
+    }
+    if (linkNameInput) {
+        linkNameInput.addEventListener('input', updateBookmarkPreview);
+    }
+
+    // Quick Preset Chips in Bookmark Modal
+    document.querySelectorAll('.preset-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+            if (linkNameInput) linkNameInput.value = chip.dataset.name || '';
+            if (linkUrlInput) linkUrlInput.value = chip.dataset.url || '';
+            updateBookmarkPreview();
+            if (linkNameInput) linkNameInput.focus();
+        });
     });
 
-    if (addLinkBtn) addLinkBtn.addEventListener('click', () => {
-        lastFocusedElement = document.activeElement;
-        editingLinkIndex = null;
-        if (modalTitle) modalTitle.textContent = 'Add New Link';
-        if (modalSubmitBtn) modalSubmitBtn.textContent = 'Add Link';
-        if (addLinkModal) addLinkModal.classList.remove('hidden');
-        setTimeout(() => { if (linkNameInput) linkNameInput.focus(); }, 50);
-    });
+    // Check elements exist before adding listeners
+    if (nameElement) {
+        nameElement.addEventListener('click', () => {
+            const currentName = localStorage.getItem('username') || "Guest";
+            const newName = prompt("Enter your name:", currentName === "Guest" ? "" : currentName);
+            if (newName !== null && newName.trim() !== "") {
+                safeSetItem('username', newName.trim());
+                nameElement.textContent = newName.trim();
+                showToast(`👋 Welcome, ${newName.trim()}!`);
+            }
+        });
+    }
+
+    if (addLinkBtn) {
+        addLinkBtn.addEventListener('click', () => {
+            lastFocusedElement = document.activeElement;
+            editingLinkIndex = null;
+            if (modalTitle) modalTitle.textContent = 'Add New Link';
+            if (modalSubmitBtn) modalSubmitBtn.textContent = 'Add Link';
+            if (addLinkModal) addLinkModal.classList.remove('hidden');
+            updateBookmarkPreview();
+            setTimeout(() => { if (linkNameInput) linkNameInput.focus(); }, 50);
+        });
+    }
 
     if (closeBtn) closeBtn.addEventListener('click', closeModal);
     if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
@@ -402,11 +500,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (addLinkForm) addLinkForm.addEventListener('submit', (e) => {
         e.preventDefault();
 
-        // SECURITY: Sanitize user input
         const name = sanitizeInput(linkNameInput.value.trim());
         let url = linkUrlInput.value.trim();
 
-        // SECURITY: Validate and normalize URL
         try {
             url = normalizeUrl(url);
         } catch (error) {
@@ -416,7 +512,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Additional validation
         if (!name || name.length > 100) {
             alert('Please enter a valid name (1-100 characters)');
             return;
@@ -427,17 +522,23 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        if (editingLinkIndex !== null) links[editingLinkIndex] = { name, url };
-        else links.push({ name, url });
+        if (editingLinkIndex !== null) {
+            links[editingLinkIndex] = { name, url };
+            showToast('✅ Link updated');
+        } else {
+            links.push({ name, url });
+            showToast('✅ Link added');
+        }
         saveLinks();
-        renderLinks(); // This now re-renders links but doesn't re-attach global listeners
+        renderLinks();
         closeModal();
     });
 
-    // Function to close all slide panels
+    // Function to close all slide panels and drawers
     function closeAllPanels() {
-        document.querySelectorAll('.panel.slide-panel, .panel#context-menu').forEach(p => p.classList.add('hidden'));
+        document.querySelectorAll('.panel.drawer-panel, .panel.slide-panel, .panel#context-menu').forEach(p => p.classList.add('hidden'));
         document.querySelectorAll('.command-btn').forEach(btn => btn.classList.remove('active'));
+        if (drawerBackdrop) drawerBackdrop.classList.add('hidden');
     }
 
     // Toggle specific panel and close others
@@ -448,16 +549,21 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isHidden) {
             panel.classList.remove('hidden');
             if (triggerBtn) triggerBtn.classList.add('active');
+            if (drawerBackdrop) drawerBackdrop.classList.remove('hidden');
         }
+    }
+
+    if (drawerBackdrop) {
+        drawerBackdrop.addEventListener('click', () => {
+            closeAllPanels();
+        });
     }
 
     // Bind close buttons on all panels
     document.querySelectorAll('.panel-close-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
-            const panel = btn.closest('.panel') || btn.closest('.modal-overlay');
-            if (panel) panel.classList.add('hidden');
-            document.querySelectorAll('.command-btn').forEach(b => b.classList.remove('active'));
+            closeAllPanels();
         });
     });
 
@@ -483,6 +589,7 @@ document.addEventListener('DOMContentLoaded', () => {
         privacyBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             togglePanel(privacyPanel, privacyBtn);
+            updatePrivacyStorageCount();
         });
     }
 
@@ -495,48 +602,80 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    if (themePanel) themePanel.addEventListener('click', (e) => {
-        const target = e.target.closest('.theme-option') || e.target;
-        if (target.matches('.theme-option') && target.id !== 'custom-theme-btn') {
-            const theme = target.dataset.theme;
-            if (theme) applyTheme(theme);
-        } else if (target.id === 'custom-theme-btn') {
-            themePanel.classList.add('custom-view');
-            if (customThemePanel) customThemePanel.classList.remove('hidden');
-            const savedAccent = localStorage.getItem('customAccentColor') || '#38bdf8';
-            if (accentColorInput) accentColorInput.value = savedAccent;
-        } else if (target.id === 'save-custom-theme-btn') {
-            if (accentColorInput) {
-                const newColor = accentColorInput.value;
-                safeSetItem('customAccentColor', newColor);
-                applyTheme('custom');
+    // Theme Panel Click Delegation
+    if (themePanel) {
+        themePanel.addEventListener('click', (e) => {
+            const swatchCard = e.target.closest('.theme-swatch-card');
+            if (swatchCard && swatchCard.id !== 'custom-theme-btn') {
+                const theme = swatchCard.dataset.theme;
+                if (theme) applyTheme(theme);
+            } else if (e.target.closest('#custom-theme-btn') || swatchCard?.id === 'custom-theme-btn') {
+                themePanel.classList.add('custom-view');
+                if (customThemePanel) customThemePanel.classList.remove('hidden');
+                const savedAccent = localStorage.getItem('customAccentColor') || '#38bdf8';
+                if (accentColorInput) accentColorInput.value = savedAccent;
+            } else if (e.target.id === 'save-custom-theme-btn') {
+                if (accentColorInput) {
+                    const newColor = accentColorInput.value;
+                    safeSetItem('customAccentColor', newColor);
+                    applyTheme('custom');
+                    showToast('🎨 Custom accent color saved!');
+                }
+            } else if (e.target.id === 'back-to-themes-btn') {
+                themePanel.classList.remove('custom-view');
+                if (customThemePanel) customThemePanel.classList.add('hidden');
+                loadTheme();
             }
-        } else if (target.id === 'back-to-themes-btn') {
-            themePanel.classList.remove('custom-view');
-            if (customThemePanel) customThemePanel.classList.add('hidden');
-            loadTheme();
-        }
-    });
+        });
+    }
 
-    if (accentColorInput) accentColorInput.addEventListener('input', () => {
-        applyAccentColor(accentColorInput.value);
-        document.body.dataset.theme = 'custom'; // Ensure custom theme is active for preview
-    });
-
+    if (accentColorInput) {
+        accentColorInput.addEventListener('input', () => {
+            const val = accentColorInput.value;
+            applyAccentColor(val);
+            document.body.dataset.theme = 'custom';
+            const hexBadge = document.getElementById('custom-hex-val');
+            if (hexBadge) hexBadge.textContent = val.toUpperCase();
+        });
+    }
 
     if (contextEditBtn) contextEditBtn.addEventListener('click', () => {
         if (contextMenuLinkIndex !== null) openEditModal(contextMenuLinkIndex);
         if (contextMenu) contextMenu.classList.add('hidden');
     });
-    // Corrected deleteLink call
+
     if (contextDeleteBtn) contextDeleteBtn.addEventListener('click', () => {
         if (contextMenuLinkIndex !== null) {
-            // Find the element to pass for animation
             const linkElement = linksContainer ? linksContainer.querySelector(`.link-item[data-index="${contextMenuLinkIndex}"]`) : null;
             deleteLink(contextMenuLinkIndex, linkElement);
         }
         if (contextMenu) contextMenu.classList.add('hidden');
     });
+
+    // Privacy clear all data button
+    const clearAllBtn = document.getElementById('clear-all-data-btn');
+    if (clearAllBtn) {
+        clearAllBtn.addEventListener('click', () => {
+            if (confirm('Are you sure you want to reset all preferences, bookmarks, and wallpapers? This cannot be undone.')) {
+                localStorage.clear();
+                showToast('🗑️ All data wiped. Reloading...');
+                setTimeout(() => window.location.reload(), 1000);
+            }
+        });
+    }
+
+    function updatePrivacyStorageCount() {
+        const countEl = document.getElementById('privacy-storage-count');
+        if (!countEl) return;
+        let totalBytes = 0;
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            const val = localStorage.getItem(key) || '';
+            totalBytes += (key.length + val.length) * 2;
+        }
+        const kb = (totalBytes / 1024).toFixed(1);
+        countEl.textContent = `${localStorage.length} items (${kb} KB)`;
+    }
 
     // --- Initializations ---
     function startClock() {
@@ -903,87 +1042,188 @@ function initBackgroundSettings() {
     const bgSettingsBtn = document.getElementById('bg-settings-btn');
     const bgPanel = document.getElementById('bg-settings-panel');
     const bgUpload = document.getElementById('bg-image-upload');
+    const uploadDropzone = document.getElementById('upload-dropzone');
     const bgUrlInput = document.getElementById('bg-image-url');
     const applyUrlBtn = document.getElementById('apply-bg-url');
+    const scrimSlider = document.getElementById('bg-scrim-slider');
+    const scrimValue = document.getElementById('scrim-value');
     const blurSlider = document.getElementById('bg-blur');
     const brightnessSlider = document.getElementById('bg-brightness');
     const resetBtn = document.getElementById('reset-bg-btn');
     const blurValue = document.getElementById('blur-value');
     const brightnessValue = document.getElementById('brightness-value');
     const fitModeSelect = document.getElementById('bg-fit-mode');
-    const gradientSelect = document.getElementById('bg-gradient-select');
-
-    if (!bgSettingsBtn) return;
+    const presetCards = document.querySelectorAll('.wp-preset-card');
 
     let overlay = document.getElementById('custom-bg-overlay');
     if (!overlay) {
         overlay = document.createElement('div');
         overlay.id = 'custom-bg-overlay';
+        overlay.className = 'custom-bg-overlay';
         document.body.insertBefore(overlay, document.body.firstChild);
     }
 
-    bgSettingsBtn.addEventListener('click', () => {
-        bgPanel.classList.toggle('hidden');
-        document.getElementById('theme-panel')?.classList.add('hidden');
-    });
+    let scrim = document.getElementById('bg-scrim');
+    if (!scrim) {
+        scrim = document.createElement('div');
+        scrim.id = 'bg-scrim';
+        scrim.className = 'bg-scrim';
+        document.body.insertBefore(scrim, overlay.nextSibling);
+    }
 
     const savedBg = localStorage.getItem('customBg');
-    const savedBlur = localStorage.getItem('bgBlur') || '5';
+    const savedPreset = localStorage.getItem('wallpaperPreset') || 'none';
+    const savedScrim = localStorage.getItem('bgScrim') || '40';
+    const savedBlur = localStorage.getItem('bgBlur') || '0';
     const savedBrightness = localStorage.getItem('bgBrightness') || '100';
     const savedFitMode = localStorage.getItem('bgFitMode') || 'cover';
-    const savedGradient = localStorage.getItem('bgGradientFallback') || 'none';
 
     if (savedBg) {
         overlay.style.backgroundImage = `url(${savedBg})`;
         document.body.classList.add('has-custom-bg');
     }
-    
-    blurSlider.value = savedBlur;
-    brightnessSlider.value = savedBrightness;
-    blurValue.textContent = savedBlur;
-    brightnessValue.textContent = savedBrightness;
-    
-    if (fitModeSelect) fitModeSelect.value = savedFitMode;
-    if (gradientSelect) gradientSelect.value = savedGradient;
-    
-    document.body.dataset.bgGradient = savedGradient;
+
+    if (scrimSlider) {
+        scrimSlider.value = savedScrim;
+        if (scrimValue) scrimValue.textContent = `${savedScrim}%`;
+        document.documentElement.style.setProperty('--scrim-opacity', (parseInt(savedScrim, 10) / 100).toString());
+    }
+
+    if (blurSlider) {
+        blurSlider.value = savedBlur;
+        if (blurValue) blurValue.textContent = `${savedBlur}px`;
+    }
+
+    if (brightnessSlider) {
+        brightnessSlider.value = savedBrightness;
+        if (brightnessValue) brightnessValue.textContent = `${savedBrightness}%`;
+    }
+
+    if (fitModeSelect) {
+        fitModeSelect.value = savedFitMode;
+    }
+
+    // Highlight active preset card
+    presetCards.forEach(card => {
+        card.classList.toggle('active', card.dataset.preset === savedPreset);
+    });
 
     applyFilters();
     applyFitMode();
 
-    bgUpload.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
+    // Preset cards click
+    presetCards.forEach(card => {
+        card.addEventListener('click', () => {
+            presetCards.forEach(c => c.classList.remove('active'));
+            card.classList.add('active');
+            const presetId = card.dataset.preset;
+            const url = card.dataset.url;
+
+            if (presetId === 'none' || !url) {
+                overlay.style.backgroundImage = '';
+                document.body.classList.remove('has-custom-bg');
+                localStorage.removeItem('customBg');
+                safeSetItem('wallpaperPreset', 'none');
+                showToast('✨ Wallpaper cleared (Default gradient)');
+            } else {
+                overlay.style.backgroundImage = `url(${url})`;
+                document.body.classList.add('has-custom-bg');
+                safeSetItem('customBg', url);
+                safeSetItem('wallpaperPreset', presetId);
+                showToast(`🖼️ Applied ${card.querySelector('.wp-name')?.textContent || 'Preset'}`);
+            }
+            applyFilters();
+        });
+    });
+
+    // File Upload Handler
+    function handleFileUpload(file) {
+        if (!file || !file.type.startsWith('image/')) {
+            showToast('⚠️ Please choose an image file (JPG, PNG, WebP)');
+            return;
+        }
         const reader = new FileReader();
         reader.onload = (event) => {
             overlay.style.backgroundImage = `url(${event.target.result})`;
             safeSetItem('customBg', event.target.result);
+            safeSetItem('wallpaperPreset', 'custom-upload');
             document.body.classList.add('has-custom-bg');
+            presetCards.forEach(c => c.classList.remove('active'));
             applyFilters();
+            showToast('📸 Custom wallpaper uploaded!');
         };
         reader.readAsDataURL(file);
-    });
+    }
 
-    applyUrlBtn.addEventListener('click', () => {
-        const url = bgUrlInput.value.trim();
-        if (!url) return;
-        overlay.style.backgroundImage = `url(${url})`;
-        safeSetItem('customBg', url);
-        document.body.classList.add('has-custom-bg');
-        applyFilters();
-    });
+    if (bgUpload) {
+        bgUpload.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) handleFileUpload(file);
+        });
+    }
 
-    blurSlider.addEventListener('input', (e) => {
-        blurValue.textContent = e.target.value;
-        safeSetItem('bgBlur', e.target.value);
-        applyFilters();
-    });
+    // Drag and Drop on dropzone
+    if (uploadDropzone) {
+        ['dragenter', 'dragover'].forEach(name => {
+            uploadDropzone.addEventListener(name, (e) => {
+                e.preventDefault();
+                uploadDropzone.style.borderColor = 'var(--accent-color)';
+            });
+        });
+        ['dragleave', 'drop'].forEach(name => {
+            uploadDropzone.addEventListener(name, (e) => {
+                e.preventDefault();
+                uploadDropzone.style.borderColor = '';
+            });
+        });
+        uploadDropzone.addEventListener('drop', (e) => {
+            const file = e.dataTransfer.files[0];
+            if (file) handleFileUpload(file);
+        });
+    }
 
-    brightnessSlider.addEventListener('input', (e) => {
-        brightnessValue.textContent = e.target.value;
-        safeSetItem('bgBrightness', e.target.value);
-        applyFilters();
-    });
+    // Custom URL
+    if (applyUrlBtn && bgUrlInput) {
+        applyUrlBtn.addEventListener('click', () => {
+            const url = bgUrlInput.value.trim();
+            if (!url) return;
+            overlay.style.backgroundImage = `url(${url})`;
+            safeSetItem('customBg', url);
+            safeSetItem('wallpaperPreset', 'custom-url');
+            document.body.classList.add('has-custom-bg');
+            presetCards.forEach(c => c.classList.remove('active'));
+            applyFilters();
+            showToast('🔗 Wallpaper URL applied!');
+        });
+    }
+
+    // Scrim Dark Tint Slider
+    if (scrimSlider) {
+        scrimSlider.addEventListener('input', (e) => {
+            const val = e.target.value;
+            if (scrimValue) scrimValue.textContent = `${val}%`;
+            document.documentElement.style.setProperty('--scrim-opacity', (parseInt(val, 10) / 100).toString());
+            safeSetItem('bgScrim', val);
+        });
+    }
+
+    // Blur Slider
+    if (blurSlider) {
+        blurSlider.addEventListener('input', (e) => {
+            if (blurValue) blurValue.textContent = `${e.target.value}px`;
+            safeSetItem('bgBlur', e.target.value);
+            applyFilters();
+        });
+    }
+
+    // Brightness Slider
+    if (brightnessSlider) {
+        brightnessSlider.addEventListener('input', (e) => {
+            if (brightnessValue) brightnessValue.textContent = `${e.target.value}%`;
+            safeSetItem('bgBrightness', e.target.value);
+            applyFilters();
+        });
+    }
 
     if (fitModeSelect) {
         fitModeSelect.addEventListener('change', (e) => {
@@ -992,97 +1232,108 @@ function initBackgroundSettings() {
         });
     }
 
-    if (gradientSelect) {
-        gradientSelect.addEventListener('change', (e) => {
-            safeSetItem('bgGradientFallback', e.target.value);
-            document.body.dataset.bgGradient = e.target.value;
+    // Reset Wallpaper Button
+    if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+            overlay.style.backgroundImage = '';
+            overlay.style.filter = '';
+            document.body.classList.remove('has-custom-bg');
+            localStorage.removeItem('customBg');
+            safeSetItem('wallpaperPreset', 'none');
+            presetCards.forEach(c => c.classList.remove('active'));
+            const noneCard = document.querySelector('.wp-preset-card[data-preset="none"]');
+            if (noneCard) noneCard.classList.add('active');
+
+            if (blurSlider) {
+                blurSlider.value = '0';
+                if (blurValue) blurValue.textContent = '0px';
+                safeSetItem('bgBlur', '0');
+            }
+            if (brightnessSlider) {
+                brightnessSlider.value = '100';
+                if (brightnessValue) brightnessValue.textContent = '100%';
+                safeSetItem('bgBrightness', '100');
+            }
+            if (scrimSlider) {
+                scrimSlider.value = '40';
+                if (scrimValue) scrimValue.textContent = '40%';
+                document.documentElement.style.setProperty('--scrim-opacity', '0.4');
+                safeSetItem('bgScrim', '40');
+            }
+            applyFilters();
+            showToast('🔄 Wallpaper reset to default');
         });
     }
 
-    resetBtn.addEventListener('click', () => {
-        overlay.style.backgroundImage = '';
-        overlay.style.filter = '';
-        document.body.classList.remove('has-custom-bg');
-        localStorage.removeItem('customBg');
-        // Do NOT remove fit mode and gradient preferences per user feedback
-        
-        blurSlider.value = '5';
-        brightnessSlider.value = '100';
-        blurValue.textContent = '5';
-        brightnessValue.textContent = '100';
-        safeSetItem('bgBlur', '5');
-        safeSetItem('bgBrightness', '100');
-        applyFilters();
-    });
-
     function applyFilters() {
-        overlay.style.filter = `blur(${blurSlider.value}px) brightness(${brightnessSlider.value}%)`;
+        if (!overlay) return;
+        const b = blurSlider ? blurSlider.value : 0;
+        const br = brightnessSlider ? brightnessSlider.value : 100;
+        overlay.style.filter = `blur(${b}px) brightness(${br}%)`;
     }
 
     function applyFitMode() {
+        if (!overlay) return;
         const mode = localStorage.getItem('bgFitMode') || 'cover';
-        if (mode === 'cover') {
-            overlay.style.backgroundSize = 'cover';
-            overlay.style.backgroundPosition = 'center';
-        } else if (mode === 'contain') {
+        if (mode === 'contain') {
             overlay.style.backgroundSize = 'contain';
             overlay.style.backgroundPosition = 'center';
         } else if (mode === 'fill') {
             overlay.style.backgroundSize = '100% 100%';
             overlay.style.backgroundPosition = 'center';
-        } else if (mode === 'center crop') {
-            overlay.style.backgroundSize = 'auto';
+        } else {
+            overlay.style.backgroundSize = 'cover';
             overlay.style.backgroundPosition = 'center';
         }
     }
 }
 
-// === CLOCK SETTINGS ===
+// === CLOCK & TYPOGRAPHY SETTINGS ===
 function initClockSettings() {
-    const settingsBtn = document.getElementById('clock-settings-btn');
-    const panel = document.getElementById('clock-settings-panel');
     const clock24hr = document.getElementById('clock-24hr');
     const clockSeconds = document.getElementById('clock-seconds');
+    const fontSelect = document.getElementById('clock-font-select');
+    const formatSelect = document.getElementById('date-format-select');
 
-    if (!settingsBtn) return;
-
-    // Load settings
-    clock24hr.checked = localStorage.getItem('clock24hr') === 'true';
-    clockSeconds.checked = localStorage.getItem('clockSeconds') !== 'false';
-
-    // Toggle panel
-    settingsBtn.addEventListener('click', () => {
-        panel.classList.toggle('hidden');
-        document.querySelectorAll('.panel').forEach(p => {
-            if (p !== panel) p.classList.add('hidden');
-        });
-    });
-
-    // Close button
-    const closeBtn = panel.querySelector('.close-btn');
-    if (closeBtn) {
-        closeBtn.addEventListener('click', () => {
-            panel.classList.add('hidden');
+    if (clock24hr) {
+        clock24hr.checked = localStorage.getItem('clock24hr') === 'true';
+        clock24hr.addEventListener('change', () => {
+            safeSetItem('clock24hr', clock24hr.checked);
+            updateClock();
         });
     }
 
-    // Click outside to close
-    document.addEventListener('click', (e) => {
-        if (!panel.contains(e.target) && !settingsBtn.contains(e.target) && !panel.classList.contains('hidden')) {
-            panel.classList.add('hidden');
-        }
-    });
+    if (clockSeconds) {
+        clockSeconds.checked = localStorage.getItem('clockSeconds') !== 'false';
+        clockSeconds.addEventListener('change', () => {
+            safeSetItem('clockSeconds', clockSeconds.checked);
+            updateClock();
+        });
+    }
 
-    // Save settings
-    clock24hr.addEventListener('change', () => {
-        safeSetItem('clock24hr', clock24hr.checked);
-        updateClock();
-    });
+    if (fontSelect) {
+        const savedFont = localStorage.getItem('clockFont') || "'Inter', sans-serif";
+        fontSelect.value = savedFont;
+        fontSelect.addEventListener('change', (e) => {
+            const val = e.target.value;
+            safeSetItem('clockFont', val);
+            const clock = document.getElementById('clock');
+            if (clock) clock.style.fontFamily = val;
+            updateClock();
+            showToast('🔤 Clock typography updated');
+        });
+    }
 
-    clockSeconds.addEventListener('change', () => {
-        safeSetItem('clockSeconds', clockSeconds.checked);
-        updateClock();
-    });
+    if (formatSelect) {
+        const savedFormat = localStorage.getItem('dateFormat') || 'full';
+        formatSelect.value = savedFormat;
+        formatSelect.addEventListener('change', (e) => {
+            const val = e.target.value;
+            safeSetItem('dateFormat', val);
+            setDate();
+            showToast('📅 Date format updated');
+        });
+    }
 }
 
 // === EXPORT/IMPORT SETTINGS ===
